@@ -15,25 +15,19 @@ if (process.env.NODE_ENV === 'production') {
 
 require('dotenv').config({ path: envPath });
 
-// Initialize cache with 30 minute TTL
 const cache = new NodeCache({ stdTTL: 1800 });
 
 const app = express();
-
-// Trust proxy
 app.set('trust proxy', 1);
-
 app.use(cors());
 app.use(express.static('public'));
 app.use(express.static(__dirname));
 
-// Middleware for logging requests
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
     next();
 });
 
-// Updated Rate limiting configuration
 const rateLimit = require('express-rate-limit');
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -45,149 +39,106 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
-// Cities endpoint with detailed debugging
 app.get('/cities', async (req, res) => {
     try {
-        console.log('\n=== Starting City Search ===');
-        const searchTerm = req.query.term;
-        console.log('Search term received:', searchTerm);
+        const searchTerm = req.query.term.toLowerCase();
+        console.log('Search term:', searchTerm);
 
         if (!searchTerm || searchTerm.length < 2) {
-            console.log('Search term too short');
             return res.status(400).json({ error: 'Search term must be at least 2 characters' });
         }
 
-        // Check cache
-        const cacheKey = `cities_${searchTerm.toLowerCase()}`;
+        const cacheKey = `cities_${searchTerm}`;
         const cachedResults = cache.get(cacheKey);
         if (cachedResults) {
-            console.log('Returning cached results:', cachedResults);
             return res.json(cachedResults);
         }
 
-        console.log('Making API request to OpenCage');
-        console.log('API Key present:', !!process.env.OPENCAGE_API_KEY);
-
-        // Make the API request
         const response = await axios.get('https://api.opencagedata.com/geocode/v1/json', {
             params: {
                 q: searchTerm,
                 key: process.env.OPENCAGE_API_KEY,
-                limit: 25,
-                no_annotations: 1,
-                language: 'en',
-                min_confidence: 3,
-                type: 'city'
+                limit: 20,
+                no_annotations: 0,
+                language: 'en'
             }
-        });
-
-        console.log('\nAPI Response Status:', response.status);
-        console.log('Total results:', response.data.results.length);
-        console.log('Rate limit info:', {
-            remaining: response.data.rate?.remaining,
-            limit: response.data.rate?.limit
         });
 
         let cities = response.data.results
             .map(result => {
-                console.log('\nProcessing result:', {
-                    formatted: result.formatted,
-                    components: result.components,
-                    confidence: result.confidence
-                });
+                const components = result.components;
+                const annotations = result.annotations || {};
+                const cityName = components.city || 
+                               components.town || 
+                               components.municipality;
 
-                const cityName = result.components.city || 
-                               result.components.town || 
-                               result.components.municipality;
+                if (!cityName) return null;
 
-                if (!cityName) {
-                    console.log('No city name found in result');
-                    return null;
+                let score = 0;
+
+                if (components.capital) score += 50;
+                if (components._type === 'city') score += 30;
+                if (components._type === 'neighbourhood') score -= 20;
+
+                const normalizedCityName = cityName.toLowerCase();
+                if (normalizedCityName === searchTerm) score += 50;
+                if (normalizedCityName.startsWith(searchTerm)) score += 30;
+                
+                const majorCountries = ['united states', 'united kingdom', 'canada', 'australia', 
+                                      'france', 'germany', 'italy', 'spain', 'japan', 'china'];
+                if (components.country && majorCountries.includes(components.country.toLowerCase())) {
+                    score += 10;
                 }
 
-                const city = {
+                if (annotations.flag) score += 10;
+                if (components.state_capital) score += 20;
+                if (annotations.wikidata) score += 15;
+
+                if (components._type === 'village' || components._type === 'hamlet') score -= 30;
+
+                return {
                     city: cityName,
-                    state: result.components.state || 
-                           result.components.province || 
-                           result.components.region,
-                    country: result.components.country,
+                    state: components.state || components.province || components.region,
+                    country: components.country,
                     latitude: result.geometry.lat,
                     longitude: result.geometry.lng,
-                    confidence: result.confidence,
-                    type: result.components._type
+                    score: score,
+                    isCapital: !!components.capital,
+                    type: components._type
                 };
-
-                console.log('Processed city:', city);
-                return city;
             })
             .filter(city => {
-                if (!city) {
-                    return false;
-                }
-                const matches = city.city.toLowerCase().includes(searchTerm.toLowerCase());
-                console.log(`Filtering city: ${city.city} - Matches search term: ${matches}`);
-                return matches;
+                if (!city) return false;
+                const name = city.city.toLowerCase();
+                return name.includes(searchTerm) || 
+                       searchTerm.includes(name) || 
+                       name.startsWith(searchTerm.split(' ')[0]);
             })
             .sort((a, b) => {
-                // Prioritize exact matches
-                const aExact = a.city.toLowerCase() === searchTerm.toLowerCase();
-                const bExact = b.city.toLowerCase() === searchTerm.toLowerCase();
+                if (b.score !== a.score) return b.score - a.score;
                 
-                console.log(`Comparing: ${a.city} (${a.confidence}) vs ${b.city} (${b.confidence})`);
+                const aName = a.city.toLowerCase();
+                const bName = b.city.toLowerCase();
+                const aExact = aName === searchTerm;
+                const bExact = bName === searchTerm;
+                if (aExact !== bExact) return bExact ? 1 : -1;
                 
-                if (aExact !== bExact) {
-                    return bExact ? 1 : -1;
-                }
-                return b.confidence - a.confidence;
+                return aName.length - bName.length;
             })
-            .slice(0, 10);
-
-        console.log('\nFinal results:', cities);
-        
-        // If no results, try a broader search
-        if (cities.length === 0) {
-            console.log('\nNo results found, trying broader search');
-            const broadResponse = await axios.get('https://api.opencagedata.com/geocode/v1/json', {
-                params: {
-                    q: `${searchTerm} city`,
-                    key: process.env.OPENCAGE_API_KEY,
-                    limit: 10,
-                    no_annotations: 1,
-                    language: 'en'
-                }
-            });
-
-            console.log('Broad search results:', broadResponse.data.results.length);
-            
-            cities = broadResponse.data.results
-                .map(result => {
-                    const city = {
-                        city: result.components.city || 
-                              result.components.town || 
-                              result.components.municipality,
-                        state: result.components.state || 
-                               result.components.province || 
-                               result.components.region,
-                        country: result.components.country,
-                        latitude: result.geometry.lat,
-                        longitude: result.geometry.lng
-                    };
-                    console.log('Broad search processed city:', city);
-                    return city;
-                })
-                .filter(city => city.city && city.country);
-        }
+            .slice(0, 10)
+            .map(city => ({
+                city: city.city,
+                state: city.state,
+                country: city.country,
+                latitude: city.latitude,
+                longitude: city.longitude
+            }));
 
         cache.set(cacheKey, cities);
-        console.log('\n=== City Search Complete ===\n');
         res.json(cities);
 
     } catch (error) {
-        console.error('Cities API error:', {
-            message: error.message,
-            response: error.response?.data,
-            status: error.response?.status
-        });
+        console.error('Cities API error:', error.response?.data || error);
         res.status(500).json({ 
             error: 'Failed to fetch city data',
             message: error.message || 'Internal server error'
@@ -195,12 +146,10 @@ app.get('/cities', async (req, res) => {
     }
 });
 
-// Weather endpoint
 app.get('/weather', async (req, res) => {
     try {
         const { latitude, longitude, date } = req.query;
 
-        // Input validation
         if (!latitude || !longitude || !date) {
             return res.status(400).json({ 
                 error: 'Missing parameters',
@@ -240,7 +189,6 @@ app.get('/weather', async (req, res) => {
             });
         }
 
-        // Add some derived data
         weatherData.meta = {
             requested_date: date,
             location: { latitude, longitude },
@@ -267,12 +215,10 @@ app.get('/weather', async (req, res) => {
     }
 });
 
-// Serve index.html for root path
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Global error:', err.stack);
     res.status(500).json({ 
@@ -281,7 +227,6 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Graceful shutdown
 process.on('SIGTERM', () => {
     console.log('SIGTERM received. Shutting down gracefully...');
     server.close(() => {
