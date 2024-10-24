@@ -4,6 +4,8 @@ const { google } = require('googleapis');
 const cors = require('cors');
 const axios = require('axios');
 const NodeCache = require('node-cache');
+const fs = require('fs');
+const path = require('path');
 
 // Initialize cache with 30 minute TTL
 const cache = new NodeCache({ stdTTL: 1800 });
@@ -17,9 +19,26 @@ app.use((req, res, next) => {
   next();
 });
 
-// Google Sheets API setup
+// Secure Google Credentials setup
+let googleCredentials;
+try {
+  // First try to read from deployed secret file
+  if (process.env.NODE_ENV === 'production') {
+    googleCredentials = JSON.parse(
+      fs.readFileSync('/etc/secrets/google-credentials.json', 'utf8')
+    );
+  } else {
+    // For local development, use local file
+    googleCredentials = require('./google-credentials.json');
+  }
+} catch (error) {
+  console.error('Error loading credentials:', error);
+  process.exit(1);
+}
+
+// Google Sheets API setup with secure credentials
 const auth = new google.auth.GoogleAuth({
-  credentials: require('./google-credentials.json'),
+  credentials: googleCredentials,
   scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
 });
 
