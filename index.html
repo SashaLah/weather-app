@@ -157,6 +157,7 @@
        .share-container {
            margin-top: 20px;
            text-align: center;
+           width: 100%;
        }
        .share-buttons {
            display: none;
@@ -194,12 +195,21 @@
            display: inline-flex;
            align-items: center;
            gap: 8px;
+           width: auto;
+           margin: 0 auto;
        }
        .weather-description {
            font-size: 1.2em;
            margin: 15px 0;
            text-align: center;
            color: #2c3e50;
+       }
+       .birthday-message {
+           font-size: 1.3em;
+           margin: 15px 0;
+           text-align: center;
+           color: #2c3e50;
+           line-height: 1.6;
        }
 
        /* Mobile-specific styles */
@@ -240,6 +250,19 @@
                margin: 5px;
                width: calc(50% - 20px);
            }
+
+           /* Fix for share trigger button on mobile */
+           .share-trigger {
+               width: auto;
+               min-width: 200px;
+               display: inline-flex;
+               justify-content: center;
+           }
+
+           .share-container {
+               display: block;
+               width: 100%;
+           }
        }
 
        /* Autocomplete improvements */
@@ -273,6 +296,7 @@
    </style>
 </head>
 <body>
+   <!-- Rest of the HTML structure remains the same until the script part -->
    <div class="header">
        <h1>Birthday Weather Time Machine</h1>
        <div class="subtitle">Discover what the weather was like on your special day!</div>
@@ -494,16 +518,17 @@
                            const weatherIcon = getWeatherIcon(data.daily.weathercode[0]);
                            const weatherDesc = getWeatherDescription(data.daily.weathercode[0]);
 
+                           // Updated celebration message for friend's birthday
                            const title = isFriendMode ? 
-                               `On ${friendName}'s birthday in ${selectedCity.city}...` :
+                               `🎉 Happy Birthday, ${friendName}! 🎂` :
                                `On your birthday in ${selectedCity.city}...`;
 
                            const messageText = isFriendMode ?
-                               `On ${friendName}'s birthday (${months[parseInt(month)-1]} ${day}, ${year}) in ${selectedCity.city}, ${weatherDesc} ${weatherIcon}` :
+                               `🎈 Hey ${friendName}! On the day you were born (${months[parseInt(month)-1]} ${day}, ${year}) in ${selectedCity.city}, ${weatherDesc}! Here's to making more amazing memories, rain or shine! ${weatherIcon} 🎉` :
                                `On my birthday (${months[parseInt(month)-1]} ${day}, ${year}) in ${selectedCity.city}, ${weatherDesc} ${weatherIcon}`;
 
                            $('#weatherResult').html(`
-                               <h3>${title}</h3>
+                               <h3 class="birthday-message">${title}</h3>
                                <div class="weather-icon">${weatherIcon}</div>
                                <div class="weather-description">${weatherDesc}</div>
                                <p>High Temperature: ${maxTemp}${unit}</p>
