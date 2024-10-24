@@ -60,17 +60,17 @@ app.get('/cities', async (req, res) => {
             return res.json(cachedResults);
         }
 
+        // Use bounded box for better results and add additional parameters
         const response = await axios.get('https://api.opencagedata.com/geocode/v1/json', {
             params: {
-                q: searchTerm,
+                q: `${searchTerm} city`,  // Add 'city' to prioritize city results
                 key: process.env.OPENCAGE_API_KEY,
-                limit: 15,
+                limit: 20,  // Increased limit to get more results to filter
                 no_annotations: 1,
                 language: 'en',
-                min_confidence: 7,
+                min_confidence: 5,  // Lowered to get more results
                 type: 'city',
-                no_record: 1,
-                bounds: '-180,-90,180,90'
+                no_record: 1
             }
         });
 
@@ -79,14 +79,10 @@ app.get('/cities', async (req, res) => {
                 const components = result.components;
                 const cityName = components.city || 
                                components.town || 
-                               components.village || 
                                components.municipality ||
-                               components.suburb;
+                               components.county;  // Only use major divisions
 
                 if (!cityName) return null;
-
-                // Get the formatted name from formatted field if available
-                const formattedName = result.formatted || '';
 
                 return {
                     city: cityName,
@@ -95,25 +91,45 @@ app.get('/cities', async (req, res) => {
                     latitude: result.geometry.lat,
                     longitude: result.geometry.lng,
                     confidence: result.confidence,
-                    formatted: formattedName,
+                    isCapital: components.capital === 'yes',
+                    type: components._type || '',
                     population: components.population
                 };
             })
-            .filter(city => city !== null && city.city.toLowerCase().includes(searchTerm.toLowerCase()))
+            .filter(city => {
+                return city !== null && 
+                       city.city.toLowerCase().includes(searchTerm.toLowerCase()) &&
+                       city.country;  // Ensure we have country information
+            })
             .sort((a, b) => {
                 // Prioritize exact matches
                 const aExact = a.city.toLowerCase() === searchTerm.toLowerCase();
                 const bExact = b.city.toLowerCase() === searchTerm.toLowerCase();
                 if (aExact !== bExact) return bExact ? 1 : -1;
 
-                // Then sort by confidence
-                if (a.confidence !== b.confidence) {
+                // Then prioritize capitals
+                if (a.isCapital !== b.isCapital) return a.isCapital ? -1 : 1;
+
+                // Then check if it's a major city (usually has higher confidence)
+                if (Math.abs(a.confidence - b.confidence) > 2) {
                     return b.confidence - a.confidence;
                 }
-                // Finally sort by population if available
-                return (b.population || 0) - (a.population || 0);
+
+                // If confidence is similar, prioritize by population if available
+                if (a.population && b.population) {
+                    return b.population - a.population;
+                }
+
+                return 0;
             })
-            .slice(0, 10);
+            .slice(0, 10)
+            .map(city => ({
+                city: city.city,
+                state: city.state,
+                country: city.country,
+                latitude: city.latitude,
+                longitude: city.longitude
+            }));
 
         // Cache the results
         cache.set(cacheKey, cities);
