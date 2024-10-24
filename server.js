@@ -5,7 +5,6 @@ const NodeCache = require('node-cache');
 const fs = require('fs');
 const path = require('path');
 
-// Configure environment based on NODE_ENV
 let envPath;
 if (process.env.NODE_ENV === 'production') {
     envPath = '/etc/secrets/.env';
@@ -39,62 +38,140 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
+// Helper function to calculate match quality
+function calculateMatchQuality(cityName, searchTerm) {
+    const cityLower = cityName.toLowerCase();
+    const searchLower = searchTerm.toLowerCase();
+    const searchParts = searchLower.split(' ').filter(part => part.length > 0);
+
+    // Perfect match
+    if (cityLower === searchLower) return 100;
+
+    // Starts with exact search term
+    if (cityLower.startsWith(searchLower)) return 90;
+
+    // All search parts match in order
+    if (searchParts.every(part => {
+        const index = cityLower.indexOf(part);
+        return index !== -1;
+    })) return 80;
+
+    // First word matches exactly
+    if (cityLower.startsWith(searchParts[0])) return 70;
+
+    // Contains all search parts
+    if (searchParts.every(part => cityLower.includes(part))) return 60;
+
+    // Contains first search part
+    if (cityLower.includes(searchParts[0])) return 50;
+
+    return 0;
+}
+
 app.get('/cities', async (req, res) => {
     try {
-        const searchTerm = req.query.term.toLowerCase();
+        const searchTerm = req.query.term.trim();
         console.log('Search term:', searchTerm);
 
         if (!searchTerm || searchTerm.length < 2) {
             return res.status(400).json({ error: 'Search term must be at least 2 characters' });
         }
 
-        const cacheKey = `cities_${searchTerm}`;
+        const cacheKey = `cities_${searchTerm.toLowerCase()}`;
         const cachedResults = cache.get(cacheKey);
         if (cachedResults) {
             return res.json(cachedResults);
         }
 
-        const response = await axios.get('https://api.opencagedata.com/geocode/v1/json', {
-            params: {
-                q: searchTerm,
-                key: process.env.OPENCAGE_API_KEY,
-                limit: 20,
-                no_annotations: 0,
-                language: 'en'
-            }
-        });
+        // Make multiple searches to improve results
+        const searches = [
+            // Primary search with original term
+            axios.get('https://api.opencagedata.com/geocode/v1/json', {
+                params: {
+                    q: searchTerm,
+                    key: process.env.OPENCAGE_API_KEY,
+                    limit: 10,
+                    no_annotations: 0,
+                    language: 'en'
+                }
+            }),
+            // Secondary search appending "city" to the term
+            axios.get('https://api.opencagedata.com/geocode/v1/json', {
+                params: {
+                    q: `${searchTerm} city`,
+                    key: process.env.OPENCAGE_API_KEY,
+                    limit: 10,
+                    no_annotations: 0,
+                    language: 'en'
+                }
+            })
+        ];
 
-        let cities = response.data.results
+        const [primaryResults, secondaryResults] = await Promise.all(searches);
+        const combinedResults = [...primaryResults.data.results, ...secondaryResults.data.results];
+
+        let cities = combinedResults
             .map(result => {
                 const components = result.components;
                 const annotations = result.annotations || {};
                 const cityName = components.city || 
                                components.town || 
-                               components.municipality;
+                               components.municipality ||
+                               components.county;
 
                 if (!cityName) return null;
 
                 let score = 0;
 
-                if (components.capital) score += 50;
-                if (components._type === 'city') score += 30;
-                if (components._type === 'neighbourhood') score -= 20;
+                // Basic match quality
+                const matchQuality = calculateMatchQuality(cityName, searchTerm);
+                score += matchQuality;
 
-                const normalizedCityName = cityName.toLowerCase();
-                if (normalizedCityName === searchTerm) score += 50;
-                if (normalizedCityName.startsWith(searchTerm)) score += 30;
+                // Population/importance boosts
+                if (components.capital === 'yes') score += 200;
+                if (components.state_capital === 'yes') score += 100;
+                if (annotations.wikidata) score += 50;
+                if (components._type === 'city') score += 50;
                 
-                const majorCountries = ['united states', 'united kingdom', 'canada', 'australia', 
-                                      'france', 'germany', 'italy', 'spain', 'japan', 'china'];
-                if (components.country && majorCountries.includes(components.country.toLowerCase())) {
-                    score += 10;
+                // Country importance
+                const majorCountries = {
+                    'united states': 100,
+                    'united kingdom': 90,
+                    'canada': 80,
+                    'australia': 80,
+                    'france': 70,
+                    'germany': 70,
+                    'japan': 70,
+                    'china': 70,
+                    'india': 70,
+                    'brazil': 70,
+                    'italy': 60,
+                    'spain': 60
+                };
+
+                const countryLower = (components.country || '').toLowerCase();
+                if (majorCountries[countryLower]) {
+                    score += majorCountries[countryLower];
                 }
 
-                if (annotations.flag) score += 10;
-                if (components.state_capital) score += 20;
-                if (annotations.wikidata) score += 15;
+                // Major city boost for well-known cities
+                const majorCities = {
+                    'new york': 300,
+                    'london': 300,
+                    'paris': 280,
+                    'tokyo': 280,
+                    'los angeles': 260,
+                    'chicago': 250,
+                    'houston': 240,
+                    'miami': 240,
+                    'toronto': 240,
+                    'sydney': 240
+                };
 
-                if (components._type === 'village' || components._type === 'hamlet') score -= 30;
+                const cityLower = cityName.toLowerCase();
+                if (majorCities[cityLower]) {
+                    score += majorCities[cityLower];
+                }
 
                 return {
                     city: cityName,
@@ -103,36 +180,41 @@ app.get('/cities', async (req, res) => {
                     latitude: result.geometry.lat,
                     longitude: result.geometry.lng,
                     score: score,
-                    isCapital: !!components.capital,
-                    type: components._type
+                    formatted: result.formatted
                 };
             })
             .filter(city => {
                 if (!city) return false;
-                const name = city.city.toLowerCase();
-                return name.includes(searchTerm) || 
-                       searchTerm.includes(name) || 
-                       name.startsWith(searchTerm.split(' ')[0]);
-            })
-            .sort((a, b) => {
-                if (b.score !== a.score) return b.score - a.score;
                 
-                const aName = a.city.toLowerCase();
-                const bName = b.city.toLowerCase();
-                const aExact = aName === searchTerm;
-                const bExact = bName === searchTerm;
-                if (aExact !== bExact) return bExact ? 1 : -1;
+                // Enhanced relevancy check
+                const cityLower = city.city.toLowerCase();
+                const searchParts = searchTerm.toLowerCase().split(' ');
                 
-                return aName.length - bName.length;
+                // Check if city name contains all search parts
+                return searchParts.every(part => 
+                    cityLower.includes(part) || 
+                    (city.state && city.state.toLowerCase().includes(part)) ||
+                    (city.country && city.country.toLowerCase().includes(part))
+                );
             })
-            .slice(0, 10)
-            .map(city => ({
-                city: city.city,
-                state: city.state,
-                country: city.country,
-                latitude: city.latitude,
-                longitude: city.longitude
-            }));
+            .sort((a, b) => b.score - a.score);
+
+        // Remove duplicates, keeping highest scored version
+        cities = Array.from(new Map(
+            cities.map(city => [
+                `${city.city.toLowerCase()}-${city.country}`,
+                city
+            ])
+        ).values());
+
+        // Take top 10 results
+        cities = cities.slice(0, 10).map(city => ({
+            city: city.city,
+            state: city.state,
+            country: city.country,
+            latitude: city.latitude,
+            longitude: city.longitude
+        }));
 
         cache.set(cacheKey, cities);
         res.json(cities);
