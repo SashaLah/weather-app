@@ -13,6 +13,10 @@ const cache = new NodeCache({ stdTTL: 1800 });
 const app = express();
 app.use(cors());
 
+// Serve static files
+app.use(express.static('public'));
+app.use(express.static(__dirname));
+
 // Middleware for logging requests
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
@@ -177,6 +181,11 @@ app.get('/weather', async (req, res) => {
       message: error.response?.data?.reason || error.message || 'Failed to fetch weather data'
     });
   }
+});
+
+// Serve index.html for root path
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Error handling middleware
