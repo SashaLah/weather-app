@@ -1,0 +1,23 @@
+{
+  "name": "cityproject",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "A project for city and birthday searches",
+  "dependencies": {
+    "@googlemaps/google-maps-services-js": "^3.4.0",
+    "axios": "^1.7.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "express-rate-limit": "^7.4.1",
+    "google-spreadsheet": "^4.1.4",
+    "googleapis": "^144.0.0",
+    "node-cache": "^5.1.2"
+  }
+}

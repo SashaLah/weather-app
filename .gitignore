@@ -1,0 +1,7 @@
+node_modules/
+.env
+myenv/
+google-credentials.json
+get-pip.py
+direct-test.js
+test-sheet.js
