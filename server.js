@@ -45,7 +45,7 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
-// Cities endpoint using OpenCage
+// Improved Cities endpoint using OpenCage
 app.get('/cities', async (req, res) => {
     try {
         const searchTerm = req.query.term;
@@ -54,7 +54,7 @@ app.get('/cities', async (req, res) => {
         }
 
         // Check cache first
-        const cacheKey = `cities_${searchTerm}`;
+        const cacheKey = `cities_${searchTerm.toLowerCase()}`;
         const cachedResults = cache.get(cacheKey);
         if (cachedResults) {
             return res.json(cachedResults);
@@ -64,25 +64,56 @@ app.get('/cities', async (req, res) => {
             params: {
                 q: searchTerm,
                 key: process.env.OPENCAGE_API_KEY,
-                limit: 10,
+                limit: 15,
                 no_annotations: 1,
                 language: 'en',
-                min_confidence: 7
+                min_confidence: 7,
+                type: 'city',
+                no_record: 1,
+                bounds: '-180,-90,180,90'
             }
         });
 
         const cities = response.data.results
             .map(result => {
                 const components = result.components;
+                const cityName = components.city || 
+                               components.town || 
+                               components.village || 
+                               components.municipality ||
+                               components.suburb;
+
+                if (!cityName) return null;
+
+                // Get the formatted name from formatted field if available
+                const formattedName = result.formatted || '';
+
                 return {
-                    city: components.city || components.town || components.village || components.municipality,
-                    state: components.state,
+                    city: cityName,
+                    state: components.state || components.province || components.region,
                     country: components.country,
                     latitude: result.geometry.lat,
-                    longitude: result.geometry.lng
+                    longitude: result.geometry.lng,
+                    confidence: result.confidence,
+                    formatted: formattedName,
+                    population: components.population
                 };
             })
-            .filter(city => city.city); // Only return results with a city name
+            .filter(city => city !== null && city.city.toLowerCase().includes(searchTerm.toLowerCase()))
+            .sort((a, b) => {
+                // Prioritize exact matches
+                const aExact = a.city.toLowerCase() === searchTerm.toLowerCase();
+                const bExact = b.city.toLowerCase() === searchTerm.toLowerCase();
+                if (aExact !== bExact) return bExact ? 1 : -1;
+
+                // Then sort by confidence
+                if (a.confidence !== b.confidence) {
+                    return b.confidence - a.confidence;
+                }
+                // Finally sort by population if available
+                return (b.population || 0) - (a.population || 0);
+            })
+            .slice(0, 10);
 
         // Cache the results
         cache.set(cacheKey, cities);
