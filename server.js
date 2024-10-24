@@ -11,9 +11,11 @@ const path = require('path');
 const cache = new NodeCache({ stdTTL: 1800 });
 
 const app = express();
-app.use(cors());
 
-// Serve static files
+// Trust proxy - add this line
+app.set('trust proxy', 1);
+
+app.use(cors());
 app.use(express.static('public'));
 app.use(express.static(__dirname));
 
@@ -48,11 +50,14 @@ const auth = new google.auth.GoogleAuth({
 
 const sheets = google.sheets({ version: 'v4', auth });
 
-// Rate limiting configuration
+// Updated Rate limiting configuration
 const rateLimit = require('express-rate-limit');
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    trustProxy: true
 });
 
 app.use(limiter);
@@ -208,9 +213,9 @@ process.on('SIGTERM', () => {
 
 const PORT = process.env.PORT || 10000;
 
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Server environment: ${process.env.NODE_ENV}`);
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server is running on port ${PORT}`);
+    console.log(`Server environment: ${process.env.NODE_ENV}`);
 });
 
-module.exports = app; // For testing purposes
+module.exports = app;
