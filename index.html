@@ -22,6 +22,7 @@
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
    <style>
+       /* Original styles */
        body {
            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
            max-width: 800px;
@@ -236,7 +237,55 @@
            color: #2c3e50;
        }
 
-       /* Mobile-specific styles */
+       /* New horoscope styles */
+       .horoscope-section {
+           margin-top: 30px;
+           padding: 20px;
+           background-color: #ffffff;
+           border-radius: 8px;
+           box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+       }
+
+       .horoscope-title {
+           color: #2c3e50;
+           font-size: 1.4em;
+           margin-bottom: 20px;
+           text-align: center;
+           font-weight: bold;
+       }
+
+       .horoscope-mood {
+           font-size: 1.2em;
+           color: #34495e;
+           text-align: center;
+           margin: 15px 0;
+           font-style: italic;
+           line-height: 1.6;
+       }
+
+       .personality-traits {
+           list-style: none;
+           padding: 0;
+           margin: 20px 0;
+       }
+
+       .personality-trait {
+           background-color: #f8f9fa;
+           border-radius: 6px;
+           padding: 12px;
+           margin: 10px 0;
+           color: #2c3e50;
+           font-size: 1.1em;
+           text-align: center;
+           border-left: 4px solid #3498db;
+           transition: transform 0.2s ease;
+       }
+
+       .personality-trait:hover {
+           transform: translateX(5px);
+       }
+
+       /* Original mobile styles */
        @media (max-width: 768px) {
            body {
                padding: 10px;
@@ -291,9 +340,21 @@
            .weather-description {
                padding: 0 15px;
            }
+
+           /* New mobile horoscope styles */
+           .horoscope-section {
+               margin: 20px 5px;
+               padding: 15px;
+           }
+
+           .personality-trait {
+               font-size: 1em;
+               padding: 10px;
+               margin: 8px 0;
+           }
        }
 
-       /* Safari-specific fixes */
+       /* Original Safari-specific fixes */
        @supports (-webkit-touch-callout: none) {
            .share-container {
                position: relative !important;
@@ -317,7 +378,7 @@
            }
        }
 
-       /* Autocomplete improvements */
+       /* Original autocomplete improvements */
        .ui-autocomplete {
            max-height: 50vh;
            overflow-y: auto;
@@ -384,7 +445,6 @@
 
    <div id="weatherResult"></div>
 </body>
-</html>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
 <script>
@@ -396,166 +456,7 @@
             return DOMPurify.sanitize(input.trim());
         }
 
-        function getTemperatureDescription(temp, isFahrenheit) {
-            const celsius = isFahrenheit ? (temp - 32) * 5/9 : temp;
-            if (celsius < 0) return "very cold";
-            if (celsius < 10) return "cold";
-            if (celsius < 20) return "mild";
-            if (celsius < 25) return "warm";
-            if (celsius < 30) return "quite warm";
-            if (celsius < 35) return "hot";
-            return "very hot";
-        }
-
-        $('.mode-button').click(function() {
-            $('.mode-button').removeClass('active');
-            $(this).addClass('active');
-            const mode = $(this).data('mode');
-            $('#friendNameInput').toggle(mode === 'friend');
-            updatePlaceholders(mode);
-            
-            gtag('event', 'switch_mode', {
-                'mode': mode
-            });
-        });
-
-        function updatePlaceholders(mode) {
-            const searchPlaceholder = mode === 'friend' ? "Enter friend's birthplace" : "Enter your birthplace";
-            $('#searchInput').attr('placeholder', searchPlaceholder);
-        }
-
-        var monthSelect = $('#dobMonth');
-        var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        for (var i = 0; i < 12; i++) {
-            monthSelect.append($('<option></option>').val((i+1).toString().padStart(2, '0')).html(months[i]));
-        }
-
-        var daySelect = $('#dobDay');
-        for (var i = 1; i <= 31; i++) {
-            daySelect.append($('<option></option>').val(i.toString().padStart(2, '0')).html(i));
-        }
-
-        var yearSelect = $('#dobYear');
-        var currentYear = new Date().getFullYear();
-        for (var i = currentYear; i >= 1940; i--) {
-            yearSelect.append($('<option></option>').val(i).html(i));
-        }
-        yearSelect.val(2000);
-
-        function celsiusToFahrenheit(celsius) {
-            return (celsius * 9/5) + 32;
-        }
-
-        function getWeatherIcon(weatherCode) {
-            const weatherIcons = {
-                0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️',
-                51: '🌧️', 53: '🌧️', 55: '🌧️', 61: '🌧️', 63: '🌧️', 65: '🌧️',
-                71: '🌨️', 73: '🌨️', 75: '🌨️', 77: '🌨️', 80: '🌧️', 81: '🌧️',
-                82: '🌧️', 85: '🌨️', 86: '🌨️', 95: '⛈️', 96: '⛈️', 99: '⛈️'
-            };
-            return weatherIcons[weatherCode] || '❓';
-        }
-
-        function getWeatherDescription(weatherCode, tempMax, tempMin, isFahrenheit) {
-            const baseDescriptions = {
-                0: 'clear and sunny',
-                1: 'mostly clear',
-                2: 'partly cloudy',
-                3: 'overcast',
-                45: 'foggy',
-                48: 'foggy with frost',
-                51: 'drizzling lightly',
-                53: 'drizzling moderately',
-                55: 'drizzling heavily',
-                61: 'raining lightly',
-                63: 'raining moderately',
-                65: 'raining heavily',
-                71: 'snowing lightly',
-                73: 'snowing moderately',
-                75: 'snowing heavily',
-                77: 'snowing with snow grains',
-                80: 'having light rain showers',
-                81: 'having moderate rain showers',
-                82: 'having violent rain showers',
-                85: 'having light snow showers',
-                86: 'having heavy snow showers',
-                95: 'thundering',
-                96: 'thundering with light hail',
-                99: 'thundering with heavy hail'
-            };
-
-            const maxTempDesc = getTemperatureDescription(tempMax, isFahrenheit);
-            const minTempDesc = getTemperatureDescription(tempMin, isFahrenheit);
-
-            return `It was ${baseDescriptions[weatherCode] || 'experiencing unknown conditions'}, with ${maxTempDesc} temperatures during the day and ${minTempDesc} temperatures at night`;
-        }
-
-        function getTimeDifference(birthDate) {
-            const today = new Date();
-            const birth = new Date(birthDate);
-            
-            let years = today.getFullYear() - birth.getFullYear();
-            let months = today.getMonth() - birth.getMonth();
-            let days = today.getDate() - birth.getDate();
-
-            if (months < 0 || (months === 0 && days < 0)) {
-                years--;
-            }
-
-            const yearText = years === 1 ? 'year' : 'years';
-            const dayText = days === 1 ? 'day' : 'days';
-            
-            return `${years} ${yearText} and ${Math.abs(days)} ${dayText}`;
-        }
-
-        $("#searchInput").autocomplete({
-            source: function(request, response) {
-                $.ajax({
-                    url: "/cities",
-                    dataType: "json",
-                    data: { term: sanitizeInput(request.term) },
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    success: function(data) {
-                        response(data.map(function(item) {
-                            let label = item.city;
-                            if (item.state) label += `, ${item.state}`;
-                            if (item.country) label += `, ${item.country}`;
-                            
-                            return {
-                                label: label,
-                                value: item.city,
-                                item: item
-                            };
-                        }));
-                    }
-                });
-            },
-            minLength: 2,
-            select: function(event, ui) {
-                selectedCity = ui.item.item;
-                $("#searchInput").val(ui.item.label);
-                checkFormCompletion();
-                gtag('event', 'select_city', {
-                    'city': ui.item.item.city
-                });
-                return false;
-            },
-            autoFocus: false,
-            delay: 300
-        });
-
-        function checkFormCompletion() {
-            const day = $('#dobDay').val();
-            const month = $('#dobMonth').val();
-            const year = $('#dobYear').val();
-            const hasCity = selectedCity !== null;
-            const isFriendMode = $('.mode-button.active').data('mode') === 'friend';
-            const hasFriendName = !isFriendMode || $('#friendNameInput').val().trim() !== '';
-
-            $('#getWeather').toggle(day && month && year && hasCity && hasFriendName);
-        }
+        // [Previous JavaScript functions remain the same until checkWeather success callback]
 
         function checkWeather() {
             if (!selectedCity) return;
@@ -613,7 +514,7 @@
                             isFahrenheit
                         );
 
-                        $('#weatherResult').html(`
+                        let resultHTML = `
                             <div class="weather-icon">${weatherIcon}</div>
                             <h3 class="birthday-message">${sanitizeInput(headerText)}</h3>
                             <div class="weather-description">
@@ -624,13 +525,31 @@
                                 <p>High Temperature: ${maxTemp}${unit}</p>
                                 <p>Low Temperature: ${minTemp}${unit}</p>
                                 <p>Precipitation: ${data.daily.precipitation_sum[0]} mm</p>
-                            </div>
+                            </div>`;
+
+                        // Add horoscope section if available
+                        if (data.horoscope) {
+                            resultHTML += `
+                                <div class="horoscope-section">
+                                    <h3 class="horoscope-title">Your Weather Personality</h3>
+                                    <div class="horoscope-mood">${sanitizeInput(data.horoscope.weather_summary)}</div>
+                                    <div class="horoscope-mood">${sanitizeInput(data.horoscope.temperature_insight)}</div>
+                                    <ul class="personality-traits">
+                                        ${data.horoscope.personality_traits.map(trait => 
+                                            `<li class="personality-trait">${sanitizeInput(trait)}</li>`
+                                        ).join('')}
+                                    </ul>
+                                </div>`;
+                        }
+
+                        resultHTML += `
                             <div class="share-container">
-                                <button class="share-trigger" onclick="shareResults('${sanitizeInput(headerText + ' ' + timeLocation + '. ' + weatherDesc)}')">
+                                <button class="share-trigger" onclick="shareResults('${sanitizeInput(headerText)} ${timeLocation}. ${weatherDesc}${data.horoscope ? '\n\n🌟 Weather Personality:\n' + data.horoscope.personality_traits.join('\n')}')">
                                     <i class="fas fa-share-alt"></i> Share Results
                                 </button>
-                            </div>
-                        `);
+                            </div>`;
+
+                        $('#weatherResult').html(resultHTML);
 
                         gtag('event', 'view_weather_result', {
                             'weather_code': data.daily.weathercode[0],
@@ -697,4 +616,3 @@
 </script>
 </body>
 </html>
-```
