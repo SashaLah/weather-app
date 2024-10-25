@@ -158,6 +158,7 @@
            margin-top: 20px;
            text-align: center;
            width: 100%;
+           display: block !important;
        }
        .share-buttons {
            display: none;
@@ -192,7 +193,7 @@
            border-radius: 6px;
            cursor: pointer;
            font-size: 16px;
-           display: inline-flex;
+           display: inline-flex !important;
            align-items: center;
            gap: 8px;
            width: auto;
@@ -251,17 +252,18 @@
                width: calc(50% - 20px);
            }
 
-           /* Fix for share trigger button on mobile */
+           /* Updated mobile styles for share button */
            .share-trigger {
-               width: auto;
+               display: inline-flex !important;
+               width: auto !important;
                min-width: 200px;
-               display: inline-flex;
-               justify-content: center;
+               margin: 10px auto !important;
            }
 
            .share-container {
-               display: block;
-               width: 100%;
+               display: block !important;
+               width: 100% !important;
+               visibility: visible !important;
            }
        }
 
@@ -296,7 +298,6 @@
    </style>
 </head>
 <body>
-   <!-- Rest of the HTML structure remains the same until the script part -->
    <div class="header">
        <h1>Birthday Weather Time Machine</h1>
        <div class="subtitle">Discover what the weather was like on your special day!</div>
@@ -332,7 +333,6 @@
    </div>
 
    <div id="weatherResult"></div>
-
    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
    <script>
@@ -471,20 +471,7 @@
            }
 
            function toggleShareButtons() {
-               // Try native share API first on mobile devices
-               const messageText = $('.weather-description').text();
-               if (navigator.share) {
-                   navigator.share({
-                       title: 'Birthday Weather',
-                       text: messageText
-                   }).catch(() => {
-                       // If native share fails or is cancelled, show our custom buttons
-                       $('.share-buttons').slideToggle();
-                   });
-               } else {
-                   // If native share isn't available, show our custom buttons
-                   $('.share-buttons').slideToggle();
-               }
+               $('.share-buttons').slideToggle();
            }
 
            function checkWeather() {
@@ -518,7 +505,8 @@
                            const weatherIcon = getWeatherIcon(data.daily.weathercode[0]);
                            const weatherDesc = getWeatherDescription(data.daily.weathercode[0]);
 
-                           // Updated celebration message for friend's birthday
+                           const weatherLocation = isFriendMode ? friendName : selectedCity.city;
+                           
                            const title = isFriendMode ? 
                                `🎉 Happy Birthday, ${friendName}! 🎂` :
                                `On your birthday in ${selectedCity.city}...`;
