@@ -4,6 +4,15 @@
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
    <title>Birthday Weather Time Machine</title>
+   <!-- Google Analytics (GA4) -->
+   <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+   <script>
+     window.dataLayer = window.dataLayer || [];
+     function gtag(){dataLayer.push(arguments);}
+     gtag('js', new Date());
+
+     gtag('config', 'G-38RTREJJ2S');
+   </script>
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
    <style>
@@ -508,6 +517,28 @@
                $('#getWeather').toggle(day && month && year && hasCity && hasFriendName);
            }
 
+           async function shareResults(messageText) {
+               if (navigator.share) {
+                   try {
+                       await navigator.share({
+                           title: 'Birthday Weather Time Machine',
+                           text: messageText
+                       });
+                       // Track successful share
+                       gtag('event', 'share', {
+                           'method': 'native_share',
+                           'content_type': 'weather_result'
+                       });
+                   } catch (err) {
+                       if (err.name !== 'AbortError') {
+                           $('.share-buttons').slideToggle();
+                       }
+                   }
+               } else {
+                   $('.share-buttons').slideToggle();
+               }
+           }
+
            function checkWeather() {
                if (!selectedCity) return;
                
@@ -517,6 +548,13 @@
                const date = `${year}-${month}-${day}`;
                const isFriendMode = $('.mode-button.active').data('mode') === 'friend';
                const friendName = isFriendMode ? $('#friendNameInput').val() : '';
+
+               // Track weather search
+               gtag('event', 'search_weather', {
+                   'mode': isFriendMode ? 'friend' : 'personal',
+                   'city': selectedCity.city,
+                   'year': year
+               });
 
                $('#weatherResult').html('Loading...');
 
@@ -558,31 +596,52 @@
                                    <p>Precipitation: ${data.daily.precipitation_sum[0]} mm</p>
                                </div>
                                <div class="share-container">
-                                   <button class="share-trigger" onclick="toggleShareButtons()">
+                                   <button class="share-trigger" onclick="shareResults('${encodeURIComponent(messageText)}')">
                                        <i class="fas fa-share-alt"></i> Share Results
                                    </button>
                                    <div class="share-buttons">
                                        <a href="whatsapp://send?text=${encodeURIComponent(messageText)}" 
-                                          class="share-button share-whatsapp">
+                                          class="share-button share-whatsapp"
+                                          onclick="gtag('event', 'share', {'method': 'whatsapp'});">
                                            <i class="fab fa-whatsapp"></i> Share via WhatsApp
                                        </a>
                                        <a href="mailto:?subject=Birthday Weather&body=${encodeURIComponent(messageText)}" 
-                                          class="share-button share-email">
+                                          class="share-button share-email"
+                                          onclick="gtag('event', 'share', {'method': 'email'});">
                                            <i class="far fa-envelope"></i> Share via Email
                                        </a>
                                        <a href="sms:?&body=${encodeURIComponent(messageText)}" 
-                                          class="share-button share-sms">
+                                          class="share-button share-sms"
+                                          onclick="gtag('event', 'share', {'method': 'sms'});">
                                            <i class="far fa-comment"></i> Share via Text Message
                                        </a>
                                    </div>
                                </div>
                            `);
+
+                           // Track successful weather result
+                           gtag('event', 'view_weather_result', {
+                               'weather_code': data.daily.weathercode[0],
+                               'city': selectedCity.city
+                           });
                        } else {
                            $('#weatherResult').html('<p class="error-message">Weather data not available for this date</p>');
+                           
+                           // Track error
+                           gtag('event', 'error', {
+                               'error_type': 'no_weather_data',
+                               'city': selectedCity.city
+                           });
                        }
                    },
                    error: function(err) {
                        $('#weatherResult').html('<p class="error-message">Failed to fetch weather data</p>');
+                       
+                       // Track error
+                       gtag('event', 'error', {
+                           'error_type': 'api_error',
+                           'city': selectedCity.city
+                       });
                    }
                });
            }
@@ -608,8 +667,17 @@
            });
        });
 
-       function toggleShareButtons() {
-           $('.share-buttons').slideToggle();
+       function shareResults(messageText) {
+           if (navigator.share) {
+               navigator.share({
+                   title: 'Birthday Weather Time Machine',
+                   text: decodeURIComponent(messageText)
+               }).catch(() => {
+                   $('.share-buttons').slideToggle();
+               });
+           } else {
+               $('.share-buttons').slideToggle();
+           }
        }
    </script>
 </body>
