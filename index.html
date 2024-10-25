@@ -40,6 +40,7 @@
            border-radius: 8px;
            background-color: white;
            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+           text-align: center;
        }
        .dob-container {
            display: flex;
@@ -121,9 +122,11 @@
            color: #2c3e50;
        }
        .weather-icon {
-           font-size: 8em;
+           font-size: 120px !important;
            text-align: center;
-           margin: 20px 0;
+           margin: 30px 0;
+           line-height: 1;
+           display: block;
        }
        .mode-selector {
            text-align: center;
@@ -155,7 +158,7 @@
            margin: 10px 0;
        }
        .share-container {
-           margin-top: 20px;
+           margin-top: 30px;
            text-align: center;
            width: 100%;
            display: block !important;
@@ -178,6 +181,7 @@
            gap: 10px;
            font-size: 16px;
            transition: opacity 0.3s;
+           width: auto;
        }
        .share-button:hover {
            opacity: 0.9;
@@ -201,16 +205,24 @@
        }
        .weather-description {
            font-size: 1.2em;
-           margin: 15px 0;
+           margin: 20px 0;
            text-align: center;
            color: #2c3e50;
+           line-height: 1.6;
+           padding: 0 10px;
        }
        .birthday-message {
-           font-size: 1.3em;
+           font-size: 1.5em;
            margin: 15px 0;
            text-align: center;
            color: #2c3e50;
            line-height: 1.6;
+           font-weight: bold;
+       }
+       .temp-info {
+           margin: 15px 0;
+           font-size: 1.1em;
+           color: #2c3e50;
        }
 
        /* Mobile-specific styles */
@@ -252,7 +264,6 @@
                width: calc(50% - 20px);
            }
 
-           /* Updated mobile styles for share button */
            .share-trigger {
                display: inline-flex !important;
                width: auto !important;
@@ -264,6 +275,15 @@
                display: block !important;
                width: 100% !important;
                visibility: visible !important;
+               margin: 20px 0;
+           }
+
+           .weather-icon {
+               font-size: 100px !important;
+           }
+
+           .weather-description {
+               padding: 0 15px;
            }
        }
 
@@ -385,32 +405,32 @@
                return weatherIcons[weatherCode] || '❓';
            }
 
-           function getWeatherDescription(weatherCode) {
+           function getWeatherDescription(weatherCode, city) {
                const descriptions = {
-                   0: 'it was a clear, sunny day',
-                   1: 'it was mostly clear',
-                   2: 'it was partly cloudy',
-                   3: 'it was overcast',
-                   45: 'it was foggy',
-                   48: 'it was foggy with frost',
-                   51: 'there was a light drizzle',
-                   53: 'there was a moderate drizzle',
-                   55: 'there was a heavy drizzle',
-                   61: 'there was light rain',
-                   63: 'there was moderate rain',
-                   65: 'there was heavy rain',
-                   71: 'it was snowing lightly',
-                   73: 'it was snowing moderately',
-                   75: 'it was snowing heavily',
-                   77: 'there were snow grains',
-                   80: 'there were light rain showers',
-                   81: 'there were moderate rain showers',
-                   82: 'there were violent rain showers',
-                   85: 'there were light snow showers',
-                   86: 'there were heavy snow showers',
-                   95: 'there was a thunderstorm',
-                   96: 'there was a thunderstorm with light hail',
-                   99: 'there was a thunderstorm with heavy hail'
+                   0: `in ${city}, it was a clear, sunny day`,
+                   1: `in ${city}, it was mostly clear`,
+                   2: `in ${city}, it was partly cloudy`,
+                   3: `in ${city}, it was overcast`,
+                   45: `in ${city}, it was foggy`,
+                   48: `in ${city}, it was foggy with frost`,
+                   51: `in ${city}, there was a light drizzle`,
+                   53: `in ${city}, there was a moderate drizzle`,
+                   55: `in ${city}, there was a heavy drizzle`,
+                   61: `in ${city}, there was light rain`,
+                   63: `in ${city}, there was moderate rain`,
+                   65: `in ${city}, there was heavy rain`,
+                   71: `in ${city}, it was snowing lightly`,
+                   73: `in ${city}, it was snowing moderately`,
+                   75: `in ${city}, it was snowing heavily`,
+                   77: `in ${city}, there were snow grains`,
+                   80: `in ${city}, there were light rain showers`,
+                   81: `in ${city}, there were moderate rain showers`,
+                   82: `in ${city}, there were violent rain showers`,
+                   85: `in ${city}, there were light snow showers`,
+                   86: `in ${city}, there were heavy snow showers`,
+                   95: `in ${city}, there was a thunderstorm`,
+                   96: `in ${city}, there was a thunderstorm with light hail`,
+                   99: `in ${city}, there was a thunderstorm with heavy hail`
                };
                return descriptions[weatherCode] || 'the weather conditions are unknown';
            }
@@ -444,19 +464,7 @@
                    return false;
                },
                autoFocus: false,
-               delay: 300,
-               position: {
-                   my: "left top+2",
-                   at: "left bottom"
-               }
-           }).on('focus', function() {
-               if ($(this).val().length >= 2) {
-                   $(this).autocomplete('search');
-               }
-            }).on('touchstart', function() {
-               if ($(this).val().length >= 2) {
-                   $(this).autocomplete('search');
-               }
+               delay: 300
            });
 
            function checkFormCompletion() {
@@ -468,10 +476,6 @@
                const hasFriendName = !isFriendMode || $('#friendNameInput').val().trim() !== '';
 
                $('#getWeather').toggle(day && month && year && hasCity && hasFriendName);
-           }
-
-           function toggleShareButtons() {
-               $('.share-buttons').slideToggle();
            }
 
            function checkWeather() {
@@ -503,25 +507,26 @@
                                data.daily.temperature_2m_min[0].toFixed(1);
                            const unit = isFahrenheit ? '°F' : '°C';
                            const weatherIcon = getWeatherIcon(data.daily.weathercode[0]);
-                           const weatherDesc = getWeatherDescription(data.daily.weathercode[0]);
+                           const weatherDesc = getWeatherDescription(data.daily.weathercode[0], selectedCity.city);
+                           const formattedDate = `${months[parseInt(month)-1]} ${parseInt(day)}, ${year}`;
 
-                           const weatherLocation = isFriendMode ? friendName : selectedCity.city;
-                           
                            const title = isFriendMode ? 
                                `🎉 Happy Birthday, ${friendName}! 🎂` :
                                `On your birthday in ${selectedCity.city}...`;
 
                            const messageText = isFriendMode ?
-                               `🎈 Hey ${friendName}! On the day you were born (${months[parseInt(month)-1]} ${day}, ${year}) in ${selectedCity.city}, ${weatherDesc}! Here's to making more amazing memories, rain or shine! ${weatherIcon} 🎉` :
-                               `On my birthday (${months[parseInt(month)-1]} ${day}, ${year}) in ${selectedCity.city}, ${weatherDesc} ${weatherIcon}`;
+                               `🎈 Hey ${friendName}! On the day you were born (${formattedDate}), ${weatherDesc}! Here's to making more amazing memories, rain or shine! ${weatherIcon} 🎉` :
+                               `On my birthday (${formattedDate}) ${weatherDesc} ${weatherIcon}`;
 
                            $('#weatherResult').html(`
                                <h3 class="birthday-message">${title}</h3>
                                <div class="weather-icon">${weatherIcon}</div>
                                <div class="weather-description">${weatherDesc}</div>
-                               <p>High Temperature: ${maxTemp}${unit}</p>
-                               <p>Low Temperature: ${minTemp}${unit}</p>
-                               <p>Precipitation: ${data.daily.precipitation_sum[0]} mm</p>
+                               <div class="temp-info">
+                                   <p>High Temperature: ${maxTemp}${unit}</p>
+                                   <p>Low Temperature: ${minTemp}${unit}</p>
+                                   <p>Precipitation: ${data.daily.precipitation_sum[0]} mm</p>
+                               </div>
                                <div class="share-container">
                                    <button class="share-trigger" onclick="toggleShareButtons()">
                                        <i class="fas fa-share-alt"></i> Share Results
