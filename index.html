@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
    <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
    <title>Birthday Weather Time Machine</title>
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -162,6 +162,11 @@
            text-align: center;
            width: 100%;
            display: block !important;
+           position: static !important;
+           opacity: 1 !important;
+           visibility: visible !important;
+           -webkit-transform: none !important;
+           transform: none !important;
        }
        .share-buttons {
            display: none;
@@ -202,6 +207,12 @@
            gap: 8px;
            width: auto;
            margin: 0 auto;
+           -webkit-appearance: none;
+           -webkit-display: inline-flex !important;
+           display: -webkit-inline-flex !important;
+           position: static !important;
+           opacity: 1 !important;
+           visibility: visible !important;
        }
        .weather-description {
            font-size: 1.2em;
@@ -284,6 +295,25 @@
 
            .weather-description {
                padding: 0 15px;
+           }
+       }
+
+       /* Safari-specific fixes */
+       @supports (-webkit-touch-callout: none) {
+           .share-container {
+               position: relative;
+               opacity: 1;
+               visibility: visible;
+               -webkit-transform: none;
+               transform: none;
+           }
+           
+           .share-trigger {
+               opacity: 1;
+               visibility: visible;
+               -webkit-appearance: none;
+               display: -webkit-inline-box !important;
+               display: -webkit-inline-flex !important;
            }
        }
 
