@@ -451,19 +451,15 @@ process.on('SIGTERM', () => {
     console.log('SIGTERM received. Shutting down gracefully...');
     server.close(() => {
         console.log('Server closed.');
-        process.on('SIGTERM', () => {
-            console.log('SIGTERM received. Shutting down gracefully...');
-            server.close(() => {
-                console.log('Server closed.');
-                process.exit(0);
-            });
-        });
-        
-        const PORT = process.env.PORT || 10000;
-        
-        const server = app.listen(PORT, '0.0.0.0', () => {
-            console.log(`Server is running on port ${PORT}`);
-            console.log(`Server environment: ${process.env.NODE_ENV}`);
-        });
-        
-        module.exports = app;
+        process.exit(0);
+    });
+});
+
+const PORT = process.env.PORT || 10000;
+
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server is running on port ${PORT}`);
+    console.log(`Server environment: ${process.env.NODE_ENV}`);
+});
+
+module.exports = app;
