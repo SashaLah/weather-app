@@ -6,7 +6,6 @@ const fs = require('fs');
 const path = require('path');
 const compression = require('compression');
 const { query, validationResult } = require('express-validator');
-const CircuitBreaker = require('opossum');
 
 let envPath = process.env.NODE_ENV === 'production' ? '/etc/secrets/.env' : '.env';
 require('dotenv').config({ path: envPath });
@@ -24,11 +23,184 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use(express.static(__dirname));
 
+// Weather code to personality trait mappings
+const weatherTraits = {
+    0: { // Clear sky
+        traits: [
+            "You have a bright and sunny personality",
+            "You bring clarity to difficult situations",
+            "You're naturally optimistic",
+            "You thrive in the spotlight"
+        ],
+        mood: "Your energy radiates like the clear sky on your special day!"
+    },
+    1: { // Mainly clear
+        traits: [
+            "You're mostly straightforward but keep some mystery",
+            "You have a calm and steady presence",
+            "You're good at finding silver linings",
+            "You appreciate life's simple pleasures"
+        ],
+        mood: "Like a day with gentle clouds, you bring both light and depth to those around you."
+    },
+    2: { // Partly cloudy
+        traits: [
+            "You have a complex and interesting personality",
+            "You're adaptable to change",
+            "You see both sides of every situation",
+            "You're thoughtful and contemplative"
+        ],
+        mood: "Your versatile nature helps you navigate life's changing seasons."
+    },
+    3: { // Overcast
+        traits: [
+            "You're deep and introspective",
+            "You have rich inner thoughts",
+            "You're protective of those you love",
+            "You have hidden depths that surprise people"
+        ],
+        mood: "Like an overcast sky, you carry depth and mystery that others find intriguing."
+    },
+    45: { // Foggy
+        traits: [
+            "You're mysterious and enigmatic",
+            "You have a dreamy perspective on life",
+            "You help others see things differently",
+            "You're comfortable with uncertainty"
+        ],
+        mood: "Your mysterious nature adds intrigue to everyday situations."
+    },
+    51: { // Light drizzle
+        traits: [
+            "You're gentle and nurturing",
+            "You have a subtle but lasting impact",
+            "You're refreshing to be around",
+            "You bring growth to everything you touch"
+        ],
+        mood: "Like a gentle drizzle, you nurture growth in others."
+    },
+    61: { // Rain
+        traits: [
+            "You're emotional and deeply feeling",
+            "You cleanse negative energy",
+            "You're naturally nurturing",
+            "You help others grow and flourish"
+        ],
+        mood: "Your emotional depth brings renewal and growth to relationships."
+    },
+    71: { // Snow
+        traits: [
+            "You're pure-hearted and unique",
+            "You transform environments you enter",
+            "You bring magic to ordinary moments",
+            "You have a peaceful presence"
+        ],
+        mood: "Like snowflakes, you bring unique beauty to the world."
+    },
+    95: { // Thunderstorm
+        traits: [
+            "You have a powerful presence",
+            "You're energetic and dynamic",
+            "You create lasting impressions",
+            "You're a force of nature"
+        ],
+        mood: "Your powerful energy creates memorable moments wherever you go."
+    }
+};
+
+// Temperature-based personality insights
+function getTemperatureTraits(maxTemp, minTemp) {
+    const avgTemp = (maxTemp + minTemp) / 2;
+    
+    if (avgTemp > 30) {
+        return {
+            traits: [
+                "You have a fiery and passionate nature",
+                "You bring warmth to all your relationships",
+                "You thrive in high-energy situations",
+                "You naturally motivate others"
+            ],
+            mood: "Your warm personality lights up any room you enter!"
+        };
+    } else if (avgTemp > 20) {
+        return {
+            traits: [
+                "You have a warm and balanced personality",
+                "You make others feel comfortable",
+                "You're adaptable and easy-going",
+                "You bring harmony to group situations"
+            ],
+            mood: "Your comfortable presence puts others at ease."
+        };
+    } else if (avgTemp > 10) {
+        return {
+            traits: [
+                "You have a cool and collected nature",
+                "You think clearly under pressure",
+                "You're refreshing to be around",
+                "You bring perspective to heated situations"
+            ],
+            mood: "Your cool composure helps others find balance."
+        };
+    } else {
+        return {
+            traits: [
+                "You have a crystal-clear mind",
+                "You stay cool in any situation",
+                "You're refreshingly honest",
+                "You preserve your energy well"
+            ],
+            mood: "Your crisp energy brings clarity to confusion."
+        };
+    }
+}
+
+function generateHoroscope(weatherData) {
+    const weathercode = weatherData.daily.weathercode[0];
+    const maxTemp = weatherData.daily.temperature_2m_max[0];
+    const minTemp = weatherData.daily.temperature_2m_min[0];
+    const precipitation = weatherData.daily.precipitation_sum[0];
+
+    // Find closest matching weather code
+    const weatherCodes = Object.keys(weatherTraits).map(Number);
+    const closestWeatherCode = weatherCodes.reduce((prev, curr) => 
+        Math.abs(curr - weathercode) < Math.abs(prev - weathercode) ? curr : prev
+    );
+
+    const weatherPersonality = weatherTraits[closestWeatherCode];
+    const tempPersonality = getTemperatureTraits(maxTemp, minTemp);
+
+    // Generate random indices for traits
+    const weatherTraitIndex = Math.floor(Math.random() * weatherPersonality.traits.length);
+    const tempTraitIndex = Math.floor(Math.random() * tempPersonality.traits.length);
+
+    const horoscope = {
+        weather_summary: weatherPersonality.mood,
+        temperature_insight: tempPersonality.mood,
+        personality_traits: [
+            weatherPersonality.traits[weatherTraitIndex],
+            tempPersonality.traits[tempTraitIndex]
+        ]
+    };
+
+    // Add precipitation-based insights
+    if (precipitation > 0) {
+        horoscope.personality_traits.push(
+            "You're not afraid to show your emotions",
+            "You help others grow and flourish"
+        );
+    }
+
+    return horoscope;
+}
+
+// Logging middleware
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
     next();
 });
 
+// Rate limiting
 const rateLimit = require('express-rate-limit');
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -39,7 +211,6 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Normalize country names
 function normalizeCountryName(country) {
     const countryMappings = {
         'united states of america': 'united states',
@@ -52,27 +223,20 @@ function normalizeCountryName(country) {
     return countryMappings[country.toLowerCase()] || country;
 }
 
-// Improved match quality calculation with stronger prefix matching
 function calculateMatchQuality(cityName, searchTerm) {
     const cityLower = cityName.toLowerCase();
     const searchLower = searchTerm.toLowerCase();
     
-    // Perfect match
     if (cityLower === searchLower) return 100;
-    
-    // Exact prefix match (e.g., "cup" matches "cupertino")
     if (cityLower.startsWith(searchLower)) return 95;
     
-    // Word prefix match (e.g., "san f" matches "san francisco")
     const searchWords = searchLower.split(' ');
     const cityWords = cityLower.split(' ');
     
     if (searchWords.length > 0 && cityWords.length > 0) {
         if (cityWords[0].startsWith(searchWords[0])) {
-            // If it's the start of the first word, give high score
             if (searchWords.length === 1) return 90;
             
-            // If multiple words, check if they all match as prefixes
             const allWordsMatch = searchWords.every((searchWord, index) => 
                 cityWords[index] && cityWords[index].startsWith(searchWord)
             );
@@ -80,9 +244,7 @@ function calculateMatchQuality(cityName, searchTerm) {
         }
     }
     
-    // Partial match anywhere in the name
     if (cityLower.includes(searchLower)) return 70;
-    
     return 0;
 }
 
@@ -116,7 +278,7 @@ app.get('/cities', validateCitySearch, async (req, res) => {
             params: {
                 q: searchTerm,
                 key: process.env.OPENCAGE_API_KEY,
-                limit: 20, // Increased limit to get more initial results
+                limit: 20,
                 no_annotations: 1,
                 language: 'en'
             }
@@ -133,15 +295,8 @@ app.get('/cities', validateCitySearch, async (req, res) => {
 
                 if (!cityName) return null;
 
-                // Normalize the country name
                 const country = normalizeCountryName(components.country || '');
-
                 let score = calculateMatchQuality(cityName, searchTerm);
-
-                // Additional scoring factors
-                if (components.capital === 'yes') score += 20;
-                if (components.state_capital === 'yes') score += 10;
-                if (components._type === 'city') score += 5;
 
                 return {
                     city: cityName,
@@ -153,13 +308,9 @@ app.get('/cities', validateCitySearch, async (req, res) => {
                     formatted: result.formatted
                 };
             })
-            .filter(city => {
-                if (!city) return false;
-                return city.score > 0; // Only keep results with a matching score
-            })
+            .filter(city => city && city.score > 0)
             .sort((a, b) => b.score - a.score);
 
-        // Remove duplicates using a composite key of city+state+country
         cities = Array.from(new Map(
             cities.map(city => [
                 `${city.city.toLowerCase()}-${(city.state || '').toLowerCase()}-${city.country.toLowerCase()}`,
@@ -167,7 +318,6 @@ app.get('/cities', validateCitySearch, async (req, res) => {
             ])
         ).values());
 
-        // Take top 10 results
         const formattedCities = cities.slice(0, 10).map(city => ({
             city: city.city,
             state: city.state,
@@ -206,20 +356,38 @@ app.get('/weather', async (req, res) => {
             });
         }
 
+        const requestDate = new Date(date);
+        if (isNaN(requestDate.getTime())) {
+            return res.status(400).json({
+                error: 'Invalid date',
+                message: 'Please provide a valid date'
+            });
+        }
+
         const cacheKey = `weather_${latitude}_${longitude}_${date}`;
         const cachedWeather = cache.get(cacheKey);
         if (cachedWeather) {
             return res.json(cachedWeather);
         }
 
-        const requestDate = new Date(date);
+        const formatDate = (d) => d.toISOString().split('T')[0];
+        const formattedDate = formatDate(requestDate);
+        
+        const baseParams = new URLSearchParams({
+            latitude: latitude,
+            longitude: longitude,
+            daily: 'temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode',
+            timezone: 'auto',
+            start_date: formattedDate,
+            end_date: formattedDate
+        }).toString();
+
         const today = new Date();
+        const isHistorical = requestDate < today;
         
-        const baseParams = `latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&timezone=auto&start_date=${date}&end_date=${date}`;
-        
-        const url = requestDate > today
-            ? `https://api.open-meteo.com/v1/forecast?${baseParams}`
-            : `https://archive-api.open-meteo.com/v1/era5?${baseParams}`;
+        const url = isHistorical
+            ? `https://archive-api.open-meteo.com/v1/era5?${baseParams}`
+            : `https://api.open-meteo.com/v1/forecast?${baseParams}`;
 
         const response = await axios.get(url);
         const weatherData = response.data;
@@ -231,14 +399,38 @@ app.get('/weather', async (req, res) => {
             });
         }
 
+        // Generate horoscope based on weather
+        const horoscope = generateHoroscope(weatherData);
+
+        // Add metadata to response
+        weatherData.meta = {
+            date: formattedDate,
+            data_type: isHistorical ? 'historical' : 'forecast',
+            location: {
+                latitude: parseFloat(latitude),
+                longitude: parseFloat(longitude)
+            }
+        };
+
+        // Add horoscope to response
+        weatherData.horoscope = horoscope;
+
         cache.set(cacheKey, weatherData);
         res.json(weatherData);
 
     } catch (error) {
         console.error('Weather API error:', error.response?.data || error);
+        
+        if (error.response?.status === 404) {
+            return res.status(404).json({ 
+                error: 'Not found',
+                message: 'Weather data not available for this date/location' 
+            });
+        }
+        
         res.status(500).json({ 
             error: 'Weather API error',
-            message: error.message || 'Failed to fetch weather data'
+            message: error.response?.data?.reason || error.message || 'Failed to fetch weather data'
         });
     }
 });
@@ -259,15 +451,19 @@ process.on('SIGTERM', () => {
     console.log('SIGTERM received. Shutting down gracefully...');
     server.close(() => {
         console.log('Server closed.');
-        process.exit(0);
-    });
-});
-
-const PORT = process.env.PORT || 10000;
-
-const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`Server environment: ${process.env.NODE_ENV}`);
-});
-
-module.exports = app;
+        process.on('SIGTERM', () => {
+            console.log('SIGTERM received. Shutting down gracefully...');
+            server.close(() => {
+                console.log('Server closed.');
+                process.exit(0);
+            });
+        });
+        
+        const PORT = process.env.PORT || 10000;
+        
+        const server = app.listen(PORT, '0.0.0.0', () => {
+            console.log(`Server is running on port ${PORT}`);
+            console.log(`Server environment: ${process.env.NODE_ENV}`);
+        });
+        
+        module.exports = app;
