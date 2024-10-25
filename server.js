@@ -7,19 +7,15 @@ const path = require('path');
 const compression = require('compression');
 const { query, validationResult } = require('express-validator');
 const CircuitBreaker = require('opossum');
-const swaggerUi = require('swagger-ui-express');
 
-// Environment configuration
 let envPath = process.env.NODE_ENV === 'production' ? '/etc/secrets/.env' : '.env';
 require('dotenv').config({ path: envPath });
 
-// Initialize cache with longer TTL for city data
 const cache = new NodeCache({ 
     stdTTL: 1800,
     checkperiod: 120
 });
 
-// Initialize Express app
 const app = express();
 app.set('trust proxy', 1);
 app.use(cors());
@@ -28,13 +24,11 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use(express.static(__dirname));
 
-// Logging middleware
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
     next();
 });
 
-// Rate limiting
 const rateLimit = require('express-rate-limit');
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -45,55 +39,53 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Circuit breaker configurations
-const opencageBreaker = new CircuitBreaker(
-    async (config) => axios(config),
-    {
-        timeout: 5000,
-        errorThresholdPercentage: 50,
-        resetTimeout: 30000
-    }
-);
+// Normalize country names
+function normalizeCountryName(country) {
+    const countryMappings = {
+        'united states of america': 'united states',
+        'usa': 'united states',
+        'u.s.a.': 'united states',
+        'u.s.': 'united states',
+        'uk': 'united kingdom',
+        'great britain': 'united kingdom'
+    };
+    return countryMappings[country.toLowerCase()] || country;
+}
 
-opencageBreaker.fallback(async (config) => {
-    // Fallback to cached data if available
-    const cacheKey = `cities_${config.params.q.toLowerCase()}`;
-    const cachedData = cache.get(cacheKey);
-    if (cachedData) return { data: { results: cachedData } };
-    throw new Error('Service unavailable and no cached data found');
-});
-
-// Enhanced match quality calculation
+// Improved match quality calculation with stronger prefix matching
 function calculateMatchQuality(cityName, searchTerm) {
     const cityLower = cityName.toLowerCase();
     const searchLower = searchTerm.toLowerCase();
-    const searchParts = searchLower.split(' ').filter(part => part.length > 0);
     
     // Perfect match
     if (cityLower === searchLower) return 100;
     
-    // Starts with exact search term
-    if (cityLower.startsWith(searchLower)) return 90;
+    // Exact prefix match (e.g., "cup" matches "cupertino")
+    if (cityLower.startsWith(searchLower)) return 95;
     
-    // Fuzzy matching for common misspellings and partial matches
-    const fuzzyScore = searchParts.reduce((score, part) => {
-        // Check for common prefix
-        if (cityLower.startsWith(part)) score += 40;
-        
-        // Check for contained words
-        if (cityLower.includes(part)) score += 30;
-        
-        // Check for similar characters (basic fuzzy matching)
-        const similarity = part.split('').filter(char => cityLower.includes(char)).length;
-        score += (similarity / part.length) * 20;
-        
-        return score;
-    }, 0);
+    // Word prefix match (e.g., "san f" matches "san francisco")
+    const searchWords = searchLower.split(' ');
+    const cityWords = cityLower.split(' ');
     
-    return Math.min(fuzzyScore, 85); // Cap fuzzy score below exact match scores
+    if (searchWords.length > 0 && cityWords.length > 0) {
+        if (cityWords[0].startsWith(searchWords[0])) {
+            // If it's the start of the first word, give high score
+            if (searchWords.length === 1) return 90;
+            
+            // If multiple words, check if they all match as prefixes
+            const allWordsMatch = searchWords.every((searchWord, index) => 
+                cityWords[index] && cityWords[index].startsWith(searchWord)
+            );
+            if (allWordsMatch) return 85;
+        }
+    }
+    
+    // Partial match anywhere in the name
+    if (cityLower.includes(searchLower)) return 70;
+    
+    return 0;
 }
 
-// Validation middleware
 const validateCitySearch = [
     query('term')
         .trim()
@@ -109,7 +101,6 @@ const validateCitySearch = [
     }
 ];
 
-// Enhanced city search endpoint
 app.get('/cities', validateCitySearch, async (req, res) => {
     try {
         const searchTerm = req.query.term.trim();
@@ -121,47 +112,19 @@ app.get('/cities', validateCitySearch, async (req, res) => {
             return res.json(cachedResults);
         }
 
-        // Prepare multiple search variations
-        const searchVariations = [
-            searchTerm,
-            `${searchTerm} city`,
-            // Add common prefixes/suffixes for better matching
-            searchTerm.replace(/^new /i, 'nueva '), // Spanish variation
-            searchTerm.replace(/^saint /i, 'st '), // Common abbreviation
-        ];
-
-        // Remove duplicates
-        const uniqueSearches = [...new Set(searchVariations)];
-
-        // Make parallel requests for each search variation
-        const searches = uniqueSearches.map(term => 
-            opencageBreaker.fire({
-                method: 'get',
-                url: 'https://api.opencagedata.com/geocode/v1/json',
-                params: {
-                    q: term,
-                    key: process.env.OPENCAGE_API_KEY,
-                    limit: 10,
-                    no_annotations: 0,
-                    language: 'en'
-                }
-            })
-        );
-
-        const searchResults = await Promise.allSettled(searches);
-        let combinedResults = [];
-
-        searchResults.forEach(result => {
-            if (result.status === 'fulfilled' && result.value.data?.results) {
-                combinedResults.push(...result.value.data.results);
+        const response = await axios.get('https://api.opencagedata.com/geocode/v1/json', {
+            params: {
+                q: searchTerm,
+                key: process.env.OPENCAGE_API_KEY,
+                limit: 20, // Increased limit to get more initial results
+                no_annotations: 1,
+                language: 'en'
             }
         });
 
-        // Enhanced city processing and scoring
-        let cities = combinedResults
+        let cities = response.data.results
             .map(result => {
                 const components = result.components;
-                const annotations = result.annotations || {};
                 const cityName = components.city || 
                                components.town || 
                                components.municipality ||
@@ -170,177 +133,49 @@ app.get('/cities', validateCitySearch, async (req, res) => {
 
                 if (!cityName) return null;
 
-                let score = 0;
+                // Normalize the country name
+                const country = normalizeCountryName(components.country || '');
 
-                // Enhanced match quality scoring
-                const matchQuality = calculateMatchQuality(cityName, searchTerm);
-                score += matchQuality;
+                let score = calculateMatchQuality(cityName, searchTerm);
 
-                // Population/importance boosts
-                if (components.capital === 'yes') score += 200;
-                if (components.state_capital === 'yes') score += 100;
-                if (annotations.wikidata) score += 50;
-                if (components._type === 'city') score += 50;
-
-                // Extended list of major cities with scores
-                const majorCities = {
-                    'new york': 300,
-                    'london': 300,
-                    'paris': 280,
-                    'tokyo': 280,
-                    'los angeles': 260,
-                    'chicago': 250,
-                    'houston': 240,
-                    'miami': 240,
-                    'toronto': 240,
-                    'sydney': 240,
-                    'mexico city': 230,
-                    'beijing': 230,
-                    'shanghai': 230,
-                    'dubai': 230,
-                    'singapore': 230,
-                    'hong kong': 230,
-                    'seoul': 220,
-                    'bangkok': 220,
-                    'mumbai': 220,
-                    'delhi': 220,
-                    'istanbul': 220,
-                    'moscow': 220,
-                    'são paulo': 220,
-                    'rio de janeiro': 220,
-                    'buenos aires': 220,
-                    'cairo': 220,
-                    'lagos': 210,
-                    'johannesburg': 210,
-                    'melbourne': 210,
-                    'vancouver': 210,
-                    'montreal': 210,
-                    'berlin': 210,
-                    'madrid': 210,
-                    'rome': 210,
-                    'vienna': 210,
-                    'amsterdam': 210,
-                    'brussels': 200,
-                    'stockholm': 200,
-                    'copenhagen': 200,
-                    'oslo': 200,
-                    'helsinki': 200,
-                    'warsaw': 200,
-                    'prague': 200,
-                    'budapest': 200,
-                    'athens': 200,
-                    'dublin': 200,
-                    'lisbon': 200,
-                    'barcelona': 200,
-                    'milan': 200,
-                    'munich': 200,
-                    'hamburg': 200,
-                    'frankfurt': 200,
-                    'zurich': 200,
-                    'geneva': 200,
-                    'medellin': 190,
-                    'bogota': 190,
-                    'lima': 190,
-                    'santiago': 190,
-                    'caracas': 190,
-                    'quito': 190,
-                    'panama city': 190,
-                    'san jose': 190,
-                    'managua': 190,
-                    'tegucigalpa': 190,
-                    'san salvador': 190,
-                    'guatemala city': 190
-                };
-
-                const cityLower = cityName.toLowerCase();
-                if (majorCities[cityLower]) {
-                    score += majorCities[cityLower];
-                }
-
-                // Country importance scoring
-                const majorCountries = {
-                    'united states': 100,
-                    'united kingdom': 90,
-                    'canada': 80,
-                    'australia': 80,
-                    'france': 70,
-                    'germany': 70,
-                    'japan': 70,
-                    'china': 70,
-                    'india': 70,
-                    'brazil': 70,
-                    'italy': 60,
-                    'spain': 60,
-                    'mexico': 60,
-                    'argentina': 60,
-                    'colombia': 60,
-                    'peru': 60,
-                    'chile': 60,
-                    'venezuela': 60,
-                    'ecuador': 55,
-                    'panama': 55,
-                    'costa rica': 55,
-                    'nicaragua': 55,
-                    'honduras': 55,
-                    'el salvador': 55,
-                    'guatemala': 55
-                };
-
-                const countryLower = (components.country || '').toLowerCase();
-                if (majorCountries[countryLower]) {
-                    score += majorCountries[countryLower];
-                }
+                // Additional scoring factors
+                if (components.capital === 'yes') score += 20;
+                if (components.state_capital === 'yes') score += 10;
+                if (components._type === 'city') score += 5;
 
                 return {
                     city: cityName,
                     state: components.state || components.province || components.region,
-                    country: components.country,
+                    country: country,
                     latitude: result.geometry.lat,
                     longitude: result.geometry.lng,
                     score: score,
-                    formatted: result.formatted,
-                    type: components._type
+                    formatted: result.formatted
                 };
             })
             .filter(city => {
                 if (!city) return false;
-                
-                const cityLower = city.city.toLowerCase();
-                const searchParts = searchTerm.toLowerCase().split(' ');
-                
-                // Enhanced relevancy check
-                return searchParts.some(part => {
-                    if (part.length < 2) return false;
-                    
-                    // Check various parts of the address
-                    return cityLower.includes(part) || 
-                           (city.state && city.state.toLowerCase().includes(part)) ||
-                           (city.country && city.country.toLowerCase().includes(part)) ||
-                           // Add fuzzy matching for better results
-                           calculateMatchQuality(cityLower, part) > 60;
-                });
+                return city.score > 0; // Only keep results with a matching score
             })
             .sort((a, b) => b.score - a.score);
 
-        // Remove duplicates while keeping highest scored version
+        // Remove duplicates using a composite key of city+state+country
         cities = Array.from(new Map(
             cities.map(city => [
-                `${city.city.toLowerCase()}-${city.state || ''}-${city.country}`,
+                `${city.city.toLowerCase()}-${(city.state || '').toLowerCase()}-${city.country.toLowerCase()}`,
                 city
             ])
         ).values());
 
-        // Take top results and format response
+        // Take top 10 results
         const formattedCities = cities.slice(0, 10).map(city => ({
             city: city.city,
             state: city.state,
             country: city.country,
             latitude: city.latitude,
-            longitude: city.longitude,
-            type: city.type
+            longitude: city.longitude
         }));
 
-        // Cache the results
         cache.set(cacheKey, formattedCities);
         res.json(formattedCities);
 
@@ -348,28 +183,78 @@ app.get('/cities', validateCitySearch, async (req, res) => {
         console.error('Cities API error:', error.response?.data || error);
         res.status(500).json({ 
             error: 'Failed to fetch city data',
-            details: error.message || 'Internal server error',
-            suggestion: 'Please try again with a more specific search term'
+            message: error.message || 'Internal server error'
         });
     }
 });
 
-// Weather endpoint remains the same as in your original code
 app.get('/weather', async (req, res) => {
-    // ... [Your existing weather endpoint code] ...
+    try {
+        const { latitude, longitude, date } = req.query;
+
+        if (!latitude || !longitude || !date) {
+            return res.status(400).json({ 
+                error: 'Missing parameters',
+                message: 'Latitude, longitude, and date are required' 
+            });
+        }
+
+        if (isNaN(latitude) || isNaN(longitude)) {
+            return res.status(400).json({ 
+                error: 'Invalid coordinates',
+                message: 'Latitude and longitude must be valid numbers' 
+            });
+        }
+
+        const cacheKey = `weather_${latitude}_${longitude}_${date}`;
+        const cachedWeather = cache.get(cacheKey);
+        if (cachedWeather) {
+            return res.json(cachedWeather);
+        }
+
+        const requestDate = new Date(date);
+        const today = new Date();
+        
+        const baseParams = `latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&timezone=auto&start_date=${date}&end_date=${date}`;
+        
+        const url = requestDate > today
+            ? `https://api.open-meteo.com/v1/forecast?${baseParams}`
+            : `https://archive-api.open-meteo.com/v1/era5?${baseParams}`;
+
+        const response = await axios.get(url);
+        const weatherData = response.data;
+
+        if (!weatherData.daily?.temperature_2m_max?.length) {
+            return res.status(404).json({ 
+                error: 'No data available',
+                message: 'No weather data available for this date and location' 
+            });
+        }
+
+        cache.set(cacheKey, weatherData);
+        res.json(weatherData);
+
+    } catch (error) {
+        console.error('Weather API error:', error.response?.data || error);
+        res.status(500).json({ 
+            error: 'Weather API error',
+            message: error.message || 'Failed to fetch weather data'
+        });
+    }
 });
 
-// Error handling middleware
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 app.use((err, req, res, next) => {
     console.error('Global error:', err.stack);
     res.status(500).json({ 
         error: 'Server error',
-        message: 'An unexpected error occurred',
-        details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        message: 'An unexpected error occurred'
     });
 });
 
-// Graceful shutdown handling
 process.on('SIGTERM', () => {
     console.log('SIGTERM received. Shutting down gracefully...');
     server.close(() => {
