@@ -1,706 +1,684 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="format-detection" content="telephone=no">
-    <meta name="description" content="Discover what the weather was like on your Birthday">
-    <title>Birthday Weather Time Machine</title>
-    
-    <!-- Google Analytics (GA4) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-38RTREJJ2S"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-38RTREJJ2S');
-    </script>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+   <meta name="apple-mobile-web-app-capable" content="yes">
+   <meta name="apple-mobile-web-app-status-bar-style" content="default">
+   <meta name="format-detection" content="telephone=no">
+   <title>Birthday Weather Time Machine</title>
+   <!-- Google Analytics (GA4) -->
+   <script async src="https://www.googletagmanager.com/gtag/js?id=G-38RTREJJ2S"></script>
+   <script>
+     window.dataLayer = window.dataLayer || [];
+     function gtag(){dataLayer.push(arguments);}
+     gtag('js', new Date());
 
-    <!-- External CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <!-- DOMPurify for XSS protection -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.3/purify.min.js"></script>
+     gtag('config', 'G-38RTREJJ2S');
+   </script>
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+   <style>
+       body {
+           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+           max-width: 800px;
+           margin: 0 auto;
+           padding: 20px;
+           background-color: #f8f9fa;
+           -webkit-font-smoothing: antialiased;
+           -moz-osx-font-smoothing: grayscale;
+       }
+       .header {
+           text-align: center;
+           color: #2c3e50;
+           margin-bottom: 30px;
+       }
+       .subtitle {
+           color: #666;
+           text-align: center;
+           margin-bottom: 25px;
+           font-size: 1.1em;
+       }
+       #searchInput, select {
+           width: 200px;
+           padding: 12px;
+           font-size: 16px;
+           margin-right: 10px;
+           border: 1px solid #ddd;
+           border-radius: 6px;
+           -webkit-appearance: none;
+       }
+       #weatherResult {
+           margin-top: 20px;
+           padding: 20px;
+           border: 1px solid #ddd;
+           border-radius: 8px;
+           background-color: white;
+           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+           text-align: center;
+       }
+       .dob-container {
+           display: flex;
+           margin-top: 20px;
+           margin-bottom: 20px;
+           justify-content: center;
+           gap: 15px;
+       }
+       .search-container {
+           text-align: center;
+           margin: 20px 0;
+       }
+       .search-button {
+           padding: 12px 25px;
+           background-color: #3498db;
+           color: white;
+           border: none;
+           border-radius: 6px;
+           cursor: pointer;
+           margin-top: 20px;
+           font-size: 16px;
+           transition: background-color 0.3s;
+           display: none;
+           -webkit-appearance: none;
+       }
+       .search-button:hover {
+           background-color: #2980b9;
+       }
+       .error-message {
+           color: #e74c3c;
+           margin-top: 10px;
+       }
+       .toggle-container {
+           margin: 20px 0;
+           text-align: center;
+       }
+       .switch {
+           position: relative;
+           display: inline-block;
+           width: 60px;
+           height: 34px;
+           margin: 0 10px;
+       }
+       .switch input {
+           opacity: 0;
+           width: 0;
+           height: 0;
+       }
+       .slider {
+           position: absolute;
+           cursor: pointer;
+           top: 0;
+           left: 0;
+           right: 0;
+           bottom: 0;
+           background-color: #3498db;
+           transition: .4s;
+           border-radius: 34px;
+       }
+       .slider:before {
+           position: absolute;
+           content: "";
+           height: 26px;
+           width: 26px;
+           left: 4px;
+           bottom: 4px;
+           background-color: white;
+           transition: .4s;
+           border-radius: 50%;
+       }
+       input:checked + .slider {
+           background-color: #2ecc71;
+       }
+       input:checked + .slider:before {
+           transform: translateX(26px);
+       }
+       .temp-label {
+           display: inline-block;
+           font-weight: bold;
+           color: #2c3e50;
+       }
+       .weather-icon {
+           font-size: 120px !important;
+           text-align: center;
+           margin: 30px 0;
+           line-height: 1;
+           display: block;
+       }
+       .mode-selector {
+           text-align: center;
+           margin-bottom: 20px;
+       }
+       .mode-button {
+           padding: 10px 20px;
+           margin: 0 10px;
+           cursor: pointer;
+           border: none;
+           border-radius: 5px;
+           background-color: #ecf0f1;
+           -webkit-appearance: none;
+       }
+       .mode-button.active {
+           background-color: #3498db;
+           color: white;
+       }
+       #friendNameInput {
+           display: none;
+           width: 200px;
+           padding: 12px;
+           margin: 10px auto;
+           border: 1px solid #ddd;
+           border-radius: 6px;
+           text-align: center;
+           -webkit-appearance: none;
+       }
+       .friend-input-container {
+           text-align: center;
+           margin: 10px 0;
+       }
+       .share-container {
+           margin-top: 30px;
+           text-align: center;
+           width: 100%;
+           display: block !important;
+           position: static !important;
+           opacity: 1 !important;
+           visibility: visible !important;
+           -webkit-transform: none !important;
+           transform: none !important;
+       }
+       .share-trigger {
+           background-color: #3498db;
+           color: white;
+           padding: 12px 25px;
+           border: none;
+           border-radius: 6px;
+           cursor: pointer;
+           font-size: 16px;
+           display: inline-flex !important;
+           align-items: center;
+           gap: 8px;
+           width: auto;
+           margin: 0 auto;
+           -webkit-appearance: none;
+           -webkit-display: inline-flex !important;
+           display: -webkit-inline-flex !important;
+           position: static !important;
+           opacity: 1 !important;
+           visibility: visible !important;
+           z-index: 1000;
+           touch-action: manipulation;
+       }
+       .share-trigger:hover {
+           background-color: #2980b9;
+       }
+       .weather-description {
+           font-size: 1.2em;
+           margin: 20px 0;
+           text-align: center;
+           color: #2c3e50;
+           line-height: 1.6;
+           padding: 0 10px;
+       }
+       .birthday-message {
+           font-size: 1.5em;
+           margin: 15px 0;
+           text-align: center;
+           color: #2c3e50;
+           line-height: 1.6;
+           font-weight: bold;
+       }
+       .temp-info {
+           margin: 15px 0;
+           font-size: 1.1em;
+           color: #2c3e50;
+       }
 
-    <style>
-        :root {
-            --primary-color: #3498db;
-            --secondary-color: #2980b9;
-            --text-color: #2c3e50;
-            --background-color: #f8f9fa;
-            --border-color: #ddd;
-            --border-radius: 6px;
-            --success-color: #2ecc71;
-            --error-color: #e74c3c;
-            --spacing-unit: 20px;
-        }
+       /* Mobile-specific styles */
+       @media (max-width: 768px) {
+           body {
+               padding: 10px;
+               -webkit-overflow-scrolling: touch;
+           }
+           
+           .dob-container {
+               flex-direction: column;
+               align-items: center;
+               gap: 10px;
+           }
+           
+           #searchInput, select {
+               width: 100%;
+               max-width: 300px;
+               margin: 5px 0;
+           }
+           
+           .ui-autocomplete {
+               max-width: 300px;
+               word-wrap: break-word;
+           }
 
-        /* Reset and base styles */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+           .mode-button {
+               margin: 5px;
+               width: calc(50% - 20px);
+           }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: var(--spacing-unit);
-            background-color: var(--background-color);
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            color: var(--text-color);
-        }
+           .share-trigger {
+               display: inline-flex !important;
+               width: auto !important;
+               min-width: 200px;
+               margin: 10px auto !important;
+               position: relative !important;
+               z-index: 1000;
+               -webkit-tap-highlight-color: transparent;
+           }
 
-        /* Typography */
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+           .share-container {
+               display: block !important;
+               width: 100% !important;
+               visibility: visible !important;
+               margin: 20px 0;
+               position: relative !important;
+               z-index: 1000;
+           }
 
-        .subtitle {
-            color: #666;
-            text-align: center;
-            margin-bottom: 25px;
-            font-size: 1.1em;
-        }
+           .weather-icon {
+               font-size: 100px !important;
+           }
 
-        /* Form elements base styles */
-        .input-base {
-            width: 200px;
-            padding: 12px;
-            font-size: 16px;
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
-            -webkit-appearance: none;
-        }
+           .weather-description {
+               padding: 0 15px;
+           }
+       }
 
-        /* Loading spinner */
-        .loading-spinner {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: var(--spacing-unit);
-        }
+       /* Safari-specific fixes */
+       @supports (-webkit-touch-callout: none) {
+           .share-container {
+               position: relative !important;
+               opacity: 1 !important;
+               visibility: visible !important;
+               -webkit-transform: none !important;
+               transform: none !important;
+               z-index: 1000;
+           }
+           
+           .share-trigger {
+               opacity: 1 !important;
+               visibility: visible !important;
+               -webkit-appearance: none;
+               display: -webkit-inline-box !important;
+               display: -webkit-inline-flex !important;
+               position: relative !important;
+               z-index: 1000;
+               cursor: pointer;
+               -webkit-tap-highlight-color: transparent;
+           }
+       }
 
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--border-color);
-            border-top-color: var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+       /* Autocomplete improvements */
+       .ui-autocomplete {
+           max-height: 50vh;
+           overflow-y: auto;
+           -webkit-overflow-scrolling: touch;
+           z-index: 9999;
+           background-color: white;
+           border-radius: 6px;
+           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+           border: 1px solid #ddd;
+       }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+       .ui-menu-item {
+           padding: 8px 12px;
+           cursor: pointer;
+           transition: background-color 0.2s;
+       }
 
-        /* Container styles */
-        .dob-container {
-            display: flex;
-            margin: var(--spacing-unit) 0;
-            justify-content: center;
-            gap: 15px;
-        }
+       .ui-menu-item:hover {
+           background-color: #f5f5f5;
+       }
 
-        .search-container {
-            text-align: center;
-            margin: var(--spacing-unit) 0;
-        }
-
-        /* Button styles */
-        .button-base {
-            padding: 12px 25px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
-            -webkit-appearance: none;
-        }
-
-        .button-base:hover {
-            background-color: var(--secondary-color);
-        }
-
-        /* Toggle switch */
-        .toggle-container {
-            margin: var(--spacing-unit) 0;
-            text-align: center;
-        }
-
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-            margin: 0 10px;
-        }
-
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: var(--primary-color);
-            transition: .4s;
-            border-radius: 34px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked + .slider {
-            background-color: var(--success-color);
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-
-        /* Results container */
-        #weatherResult {
-            margin-top: var(--spacing-unit);
-            padding: var(--spacing-unit);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
-            background-color: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .weather-icon {
-            font-size: 120px;
-            text-align: center;
-            margin: 30px 0;
-            line-height: 1;
-        }
-
-        .error-message {
-            color: var(--error-color);
-            text-align: center;
-            padding: var(--spacing-unit);
-        }
-
-        /* Responsive design */
-        @media (max-width: 768px) {
-            .dob-container {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .input-base {
-                width: 100%;
-                max-width: 300px;
-            }
-
-            .weather-icon {
-                font-size: 100px;
-            }
-        }
-
-        /* Accessibility improvements */
-        .visually-hidden {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            border: 0;
-        }
-
-        /* Focus styles */
-        :focus {
-            outline: 3px solid var(--primary-color);
-            outline-offset: 2px;
-        }
-
-        /* Print styles */
-        @media print {
-            body {
-                background: white;
-                color: black;
-            }
-
-            .no-print {
-                display: none;
-            }
-        }
-    </style>
+       .ui-menu-item .ui-menu-item-wrapper.ui-state-active {
+           background-color: #3498db;
+           color: white;
+           border: none;
+           margin: 0;
+       }
+   </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Birthday Weather Time Machine</h1>
-        <div class="subtitle">Discover what the weather was like on your Birthday day!</div>
-    </div>
+   <div class="header">
+       <h1>Birthday Weather Time Machine</h1>
+       <div class="subtitle">Discover what the weather was like on your Birthday day!</div>
+   </div>
 
-    <div class="dob-container">
-        <label for="dobMonth" class="visually-hidden">Birth Month</label>
-        <select id="dobMonth" class="input-base" required></select>
-        
-        <label for="dobDay" class="visually-hidden">Birth Day</label>
-        <select id="dobDay" class="input-base" required></select>
-        
-        <label for="dobYear" class="visually-hidden">Birth Year</label>
-        <select id="dobYear" class="input-base" required></select>
-    </div>
+   <div class="mode-selector">
+       <button class="mode-button active" data-mode="personal">My Birthday</button>
+       <button class="mode-button" data-mode="friend">Friend's Birthday</button>
+   </div>
 
-    <div class="search-container">
-        <label for="searchInput" class="visually-hidden">Enter birthplace</label>
-        <input type="text" id="searchInput" class="input-base" placeholder="Enter birthplace" required>
-        <button id="getWeather" class="button-base" style="display: none;">Get Weather</button>
-    </div>
+   <div class="friend-input-container">
+       <input type="text" id="friendNameInput" placeholder="Enter friend's name">
+   </div>
+   
+   <div class="dob-container">
+       <select id="dobMonth"></select>
+       <select id="dobDay"></select>
+       <select id="dobYear"></select>
+   </div>
 
-    <div class="toggle-container" role="group" aria-label="Temperature unit selection">
-        <span class="temp-label" id="fahrenheit-label">°F</span>
-        <label class="switch" for="tempToggle">
-            <input type="checkbox" id="tempToggle" aria-labelledby="fahrenheit-label celsius-label">
-            <span class="slider" role="switch" aria-checked="false"></span>
-        </label>
-        <span class="temp-label" id="celsius-label">°C</span>
-    </div>
+   <div class="search-container">
+       <input type="text" id="searchInput" placeholder="Enter birthplace">
+       <button id="getWeather" class="search-button">Get Weather</button>
+   </div>
+   
+   <div class="toggle-container">
+       <span class="temp-label">°F</span>
+       <label class="switch">
+           <input type="checkbox" id="tempToggle">
+           <span class="slider"></span>
+       </label>
+       <span class="temp-label">°C</span>
+   </div>
 
-    <div id="weatherResult" role="region" aria-live="polite"></div>
+   <div id="weatherResult"></div>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+   <script>
+       $(document).ready(function() {
+           let selectedCity = null;
+           let isFahrenheit = true;
 
-    <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+           $('.mode-button').click(function() {
+               $('.mode-button').removeClass('active');
+               $(this).addClass('active');
+               const mode = $(this).data('mode');
+               $('#friendNameInput').toggle(mode === 'friend');
+               updatePlaceholders(mode);
+               
+               // Track mode switch
+               gtag('event', 'switch_mode', {
+                   'mode': mode
+               });
+           });
 
-    <script>
-        // Main application module
-        const WeatherApp = {
-            // State management
-            state: {
-                selectedCity: null,
-                isFahrenheit: true,
-                elements: {},
-                features: {
-                    share: 'share' in navigator,
-                    localStorage: (() => {
-                        try {
-                            return 'localStorage' in window;
-                        } catch (e) {
-                            return false;
-                        }
-                    })()
-                }
-            },
+           function updatePlaceholders(mode) {
+               const searchPlaceholder = mode === 'friend' ? "Enter friend's birthplace" : "Enter your birthplace";
+               $('#searchInput').attr('placeholder', searchPlaceholder);
+           }
 
-            // Cache management
-            cache: {
-                set(key, data, ttl = 24 * 60 * 60 * 1000) {
-                    if (!WeatherApp.state.features.localStorage) return;
-                    
-                    const entry = {
-                        timestamp: Date.now(),
-                        ttl,
-                        data
-                    };
-                    try {
-                        localStorage.setItem(`weather_${key}`, JSON.stringify(entry));
-                    } catch (e) {
-                        console.warn('Cache write failed:', e);
-                    }
-                },
+           var monthSelect = $('#dobMonth');
+           var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+           for (var i = 0; i < 12; i++) {
+               monthSelect.append($('<option></option>').val((i+1).toString().padStart(2, '0')).html(months[i]));
+           }
 
-                get(key) {
-                    if (!WeatherApp.state.features.localStorage) return null;
-                    
-                    try {
-                        const entry = localStorage.getItem(`weather_${key}`);
-                        if (!entry) return null;
+           var daySelect = $('#dobDay');
+           for (var i = 1; i <= 31; i++) {
+               daySelect.append($('<option></option>').val(i.toString().padStart(2, '0')).html(i));
+           }
 
-                        const { timestamp, ttl, data } = JSON.parse(entry);
-                        if (Date.now() - timestamp > ttl) {
-                            localStorage.removeItem(`weather_${key}`);
-                            return null;
-                        }
+           var yearSelect = $('#dobYear');
+           var currentYear = new Date().getFullYear();
+           for (var i = currentYear; i >= 1940; i--) {
+               yearSelect.append($('<option></option>').val(i).html(i));
+           }
+           yearSelect.val(2000);
 
-                        return data;
-                    } catch (e) {
-                        console.warn('Cache read failed:', e);
-                        return null;
-                    }
-                }
-            },
+           function celsiusToFahrenheit(celsius) {
+               return (celsius * 9/5) + 32;
+           }
 
-            // Utility functions
-            utils: {
-                sanitizeInput(input) {
-                    return DOMPurify.sanitize(input.trim());
-                },
+           function getWeatherIcon(weatherCode) {
+               const weatherIcons = {
+                   0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️',
+                   51: '🌧️', 53: '🌧️', 55: '🌧️', 61: '🌧️', 63: '🌧️', 65: '🌧️',
+                   71: '🌨️', 73: '🌨️', 75: '🌨️', 77: '🌨️', 80: '🌧️', 81: '🌧️',
+                   82: '🌧️', 85: '🌨️', 86: '🌨️', 95: '⛈️', 96: '⛈️', 99: '⛈️'
+               };
+               return weatherIcons[weatherCode] || '❓';
+           }
 
-                celsiusToFahrenheit(celsius) {
-                    return (celsius * 9/5) + 32;
-                },
+           function getWeatherDescription(weatherCode) {
+               const descriptions = {
+                   0: 'a clear, sunny day',
+                   1: 'mostly clear',
+                   2: 'partly cloudy',
+                   3: 'overcast',
+                   45: 'foggy',
+                   48: 'foggy with frost',
+                   51: 'there was a light drizzle',
+                   53: 'there was a moderate drizzle',
+                   55: 'there was a heavy drizzle',
+                   61: 'there was light rain',
+                   63: 'there was moderate rain',
+                   65: 'there was heavy rain',
+                   71: 'it was snowing lightly',
+                   73: 'it was snowing moderately',
+                   75: 'it was snowing heavily',
+                   77: 'there were snow grains',
+                   80: 'there were light rain showers',
+                   81: 'there were moderate rain showers',
+                   82: 'there were violent rain showers',
+                   85: 'there were light snow showers',
+                   86: 'there were heavy snow showers',
+                   95: 'there was a thunderstorm',
+                   96: 'there was a thunderstorm with light hail',
+                   99: 'there was a thunderstorm with heavy hail'
+               };
+               return descriptions[weatherCode] || 'the weather conditions are unknown';
+           }
 
-                getWeatherIcon(weatherCode) {
-                    const weatherIcons = {
-                        0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️',
-                        51: '🌧️', 53: '🌧️', 55: '🌧️', 61: '🌧️', 63: '🌧️', 65: '🌧️',
-                        71: '🌨️', 73: '🌨️', 75: '🌨️', 77: '🌨️', 80: '🌧️', 81: '🌧️',
-                        82: '🌧️', 85: '🌨️', 86: '🌨️', 95: '⛈️', 96: '⛈️', 99: '⛈️'
-                    };
-                    return weatherIcons[weatherCode] || '❓';
-                },
+           function getTimeDifference(birthDate) {
+               const today = new Date();
+               const birth = new Date(birthDate);
+               
+               let years = today.getFullYear() - birth.getFullYear();
+               let months = today.getMonth() - birth.getMonth();
+               let days = today.getDate() - birth.getDate();
 
-                getWeatherDescription(weatherCode) {
-                    const descriptions = {
-                        0: 'a clear, sunny day',
-                        1: 'mostly clear',
-                        2: 'partly cloudy',
-                        3: 'overcast',
-                        45: 'foggy',
-                        48: 'foggy with frost',
-                        51: 'there was a light drizzle',
-                        53: 'there was a moderate drizzle',
-                        55: 'there was a heavy drizzle',
-                        61: 'there was light rain',
-                        63: 'there was moderate rain',
-                        65: 'there was heavy rain',
-                        71: 'it was snowing lightly',
-                        73: 'it was snowing moderately',
-                        75: 'it was snowing heavily',
-                        77: 'there were snow grains',
-                        80: 'there were light rain showers',
-                        81: 'there were moderate rain showers',
-                        82: 'there were violent rain showers',
-                        85: 'there were light snow showers',
-                        86: 'there were heavy snow showers',
-                        95: 'there was a thunderstorm',
-                        96: 'there was a thunderstorm with light hail',
-                        99: 'there was a thunderstorm with heavy hail'
-                    };
-                    return descriptions[weatherCode] || 'the weather conditions are unknown';
-                },
+               if (months < 0 || (months === 0 && days < 0)) {
+                   years--;
+               }
 
-                getTimeDifference(birthDate) {
-                    const today = new Date();
-                    const birth = new Date(birthDate);
-                    
-                    let years = today.getFullYear() - birth.getFullYear();
-                    let months = today.getMonth() - birth.getMonth();
-                    let days = today.getDate() - birth.getDate();
+               const yearText = years === 1 ? 'year' : 'years';
+               const dayText = days === 1 ? 'day' : 'days';
+               
+               return `${years} ${yearText} and ${Math.abs(days)} ${dayText}`;
+           }
 
-                    if (months < 0 || (months === 0 && days < 0)) {
-                        years--;
-                    }
+           $("#searchInput").autocomplete({
+               source: function(request, response) {
+                   $.ajax({
+                       url: "/cities",
+                       dataType: "json",
+                       data: { term: request.term },
+                       success: function(data) {
+                           response(data.map(function(item) {
+                               let label = item.city;
+                               if (item.state) label += `, ${item.state}`;
+                               if (item.country) label += `, ${item.country}`;
+                               
+                               return {
+                                   label: label,
+                                   value: item.city,
+                                   item: item
+                               };
+                           }));
+                       }
+                   });
+               },
+               minLength: 2,
+               select: function(event, ui) {
+                   selectedCity = ui.item.item;
+                   $("#searchInput").val(ui.item.label);
+                   checkFormCompletion();
+                   gtag('event', 'select_city', {
+                       'city': ui.item.item.city
+                   });
+                   return false;
+               },
+               autoFocus: false,
+               delay: 300
+           });
 
-                    const yearText = years === 1 ? 'year' : 'years';
-                    const dayText = days === 1 ? 'day' : 'days';
-                    
-                    return `${years} ${yearText} and ${Math.abs(days)} ${dayText}`;
-                }
-            },
+           function checkFormCompletion() {
+               const day = $('#dobDay').val();
+               const month = $('#dobMonth').val();
+               const year = $('#dobYear').val();
+               const hasCity = selectedCity !== null;
+               const isFriendMode = $('.mode-button.active').data('mode') === 'friend';
+               const hasFriendName = !isFriendMode || $('#friendNameInput').val().trim() !== '';
 
-            // UI management
-            ui: {
-                showLoading() {
-                    WeatherApp.state.elements.weatherResult.html(`
-                        <div class="loading-spinner">
-                            <div class="spinner" role="progressbar" aria-label="Loading weather data"></div>
-                            <p>Fetching weather data...</p>
-                            </div>
-                    `);
-                },
+               $('#getWeather').toggle(day && month && year && hasCity && hasFriendName);
+           }
 
-                showError(message) {
-                    WeatherApp.state.elements.weatherResult.html(`
-                        <div class="error-message" role="alert">
-                            <p>${WeatherApp.utils.sanitizeInput(message)}</p>
-                        </div>
-                    `);
-                },
+           async function shareResults(messageText) {
+               if (navigator.share) {
+                   try {
+                       await navigator.share({
+                           title: 'Birthday Weather Time Machine',
+                           text: messageText
+                       });
+                       gtag('event', 'share', {
+                           'method': 'native_share',
+                           'content_type': 'weather_result'
+                       });
+                   } catch (err) {
+                       if (err.name !== 'AbortError') {
+                           console.error('Error sharing:', err);
+                           gtag('event', 'share_error', {
+                               'error_type': err.name
+                           });
+                       }
+                   }
+               }
+           }
 
-                updateWeatherDisplay(data, date) {
-                    const { state, utils } = WeatherApp;
-                    
-                    if (!data.daily?.temperature_2m_max) {
-                        this.showError('Weather data not available for this date');
-                        return;
-                    }
+           function checkWeather() {
+               if (!selectedCity) return;
+               
+               const year = $('#dobYear').val();
+               const month = $('#dobMonth').val();
+               const day = $('#dobDay').val();
+               const date = `${year}-${month}-${day}`;
+               const isFriendMode = $('.mode-button.active').data('mode') === 'friend';
+               const friendName = isFriendMode ? $('#friendNameInput').val() : '';
 
-                    const maxTemp = state.isFahrenheit ? 
-                        utils.celsiusToFahrenheit(data.daily.temperature_2m_max[0]).toFixed(1) : 
-                        data.daily.temperature_2m_max[0].toFixed(1);
-                    const minTemp = state.isFahrenheit ? 
-                        utils.celsiusToFahrenheit(data.daily.temperature_2m_min[0]).toFixed(1) : 
-                        data.daily.temperature_2m_min[0].toFixed(1);
-                    const unit = state.isFahrenheit ? '°F' : '°C';
-                    const weatherIcon = utils.getWeatherIcon(data.daily.weathercode[0]);
-                    const weatherDesc = utils.getWeatherDescription(data.daily.weathercode[0]);
-                    const timeDiff = utils.getTimeDifference(date);
+               gtag('event', 'search_weather', {
+                   'mode': isFriendMode ? 'friend' : 'personal',
+                   'city': selectedCity.city,
+                   'year': year
+               });
 
-                    const title = `On your birthday in ${state.selectedCity.city}, ${timeDiff} ago, it was ${weatherDesc}!`;
-                    
-                    state.elements.weatherResult.html(`
-                        <div role="region" aria-label="Weather results">
-                            <h3 class="birthday-message">${title}</h3>
-                            <div class="weather-icon" role="img" aria-label="Weather icon: ${weatherDesc}">${weatherIcon}</div>
-                            <div class="temp-info">
-                                <p>High Temperature: ${maxTemp}${unit}</p>
-                                <p>Low Temperature: ${minTemp}${unit}</p>
-                                <p>Precipitation: ${data.daily.precipitation_sum[0]} mm</p>
-                            </div>
-                            ${state.features.share ? `
-                                <div class="share-container">
-                                    <button class="button-base share-trigger" onclick="WeatherApp.actions.shareResults('${title}')">
-                                        <i class="fas fa-share-alt" aria-hidden="true"></i> Share Results
-                                    </button>
-                                </div>
-                            ` : ''}
-                        </div>
-                    `);
+               $('#weatherResult').html('Loading...');
 
-                    gtag('event', 'view_weather_result', {
-                        'weather_code': data.daily.weathercode[0],
-                        'city': state.selectedCity.city
-                    });
-                }
-            },
+               $.ajax({
+                   url: "/weather",
+                   data: {
+                       latitude: selectedCity.latitude,
+                       longitude: selectedCity.longitude,
+                       date: date
+                   },
+                   success: function(data) {
+                       if (data.daily && data.daily.temperature_2m_max) {
+                           const maxTemp = isFahrenheit ? 
+                               celsiusToFahrenheit(data.daily.temperature_2m_max[0]).toFixed(1) : 
+                               data.daily.temperature_2m_max[0].toFixed(1);
+                           const minTemp = isFahrenheit ? 
+                               celsiusToFahrenheit(data.daily.temperature_2m_min[0]).toFixed(1) : 
+                               data.daily.temperature_2m_min[0].toFixed(1);
+                           const unit = isFahrenheit ? '°F' : '°C';
+                           const weatherIcon = getWeatherIcon(data.daily.weathercode[0]);
+                           const weatherDesc = getWeatherDescription(data.daily.weathercode[0]);
+                           const timeDiff = getTimeDifference(`${year}-${month}-${day}`);
 
-            // API interactions
-            api: {
-                async fetchWeatherWithRetry(params, maxRetries = 3) {
-                    const backoffMs = (attempt) => Math.min(1000 * Math.pow(2, attempt), 10000);
-                    
-                    for (let i = 0; i < maxRetries; i++) {
-                        try {
-                            const response = await $.ajax({
-                                url: "/weather",
-                                data: params,
-                                headers: {
-                                    'X-Requested-With': 'XMLHttpRequest',
-                                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content
-                                }
-                            });
-                            return response;
-                        } catch (error) {
-                            if (i === maxRetries - 1) throw error;
-                            await new Promise(resolve => setTimeout(resolve, backoffMs(i)));
-                        }
-                    }
-                },
+                           let title, messageText;
+                           if (isFriendMode) {
+                               title = `Happy Birthday, ${friendName}!`;
+                               messageText = `On your birthday in ${selectedCity.city}, ${timeDiff} ago, it was ${weatherDesc}! ${weatherIcon}`;
+                           } else {
+                               title = `On your birthday in ${selectedCity.city}, ${timeDiff} ago, it was ${weatherDesc}!`;
+                               messageText = title;
+                           }
 
-                setupAutocomplete() {
-                    WeatherApp.state.elements.searchInput.autocomplete({
-                        source: function(request, response) {
-                            const sanitizedTerm = WeatherApp.utils.sanitizeInput(request.term);
-                            $.ajax({
-                                url: "/cities",
-                                dataType: "json",
-                                data: { term: sanitizedTerm },
-                                success: function(data) {
-                                    response(data.map(function(item) {
-                                        let label = item.city;
-                                        if (item.state) label += `, ${item.state}`;
-                                        if (item.country) label += `, ${item.country}`;
-                                        
-                                        return {
-                                            label: label,
-                                            value: item.city,
-                                            item: item
-                                        };
-                                    }));
-                                }
-                            });
-                        },
-                        minLength: 2,
-                        select: function(event, ui) {
-                            WeatherApp.state.selectedCity = ui.item.item;
-                            WeatherApp.state.elements.searchInput.val(ui.item.label);
-                            WeatherApp.actions.checkFormCompletion();
-                            gtag('event', 'select_city', {
-                                'city': ui.item.item.city
-                            });
-                            return false;
-                        },
-                        autoFocus: false,
-                        delay: 300
-                    });
-                }
-            },
+                           $('#weatherResult').html(`
+                               <h3 class="birthday-message">${title}</h3>
+                               <div class="weather-icon">${weatherIcon}</div>
+                               <div class="temp-info">
+                                   <p>High Temperature: ${maxTemp}${unit}</p>
+                                   <p>Low Temperature: ${minTemp}${unit}</p>
+                                   <p>Precipitation: ${data.daily.precipitation_sum[0]} mm</p>
+                               </div>
+                               <div class="share-container">
+                                   <button class="share-trigger" onclick="shareResults('${messageText}')">
+                                       <i class="fas fa-share-alt"></i> Share Results
+                                   </button>
+                               </div>
+                           `);
 
-            // User actions
-            actions: {
-                async checkWeather() {
-                    const { state, api, ui } = WeatherApp;
-                    if (!state.selectedCity) return;
+                           gtag('event', 'view_weather_result', {
+                               'weather_code': data.daily.weathercode[0],
+                               'city': selectedCity.city
+                           });
+                       } else {
+                           $('#weatherResult').html('<p class="error-message">Weather data not available for this date</p>');
+                           gtag('event', 'error', {
+                               'error_type': 'no_weather_data',
+                               'city': selectedCity.city
+                           });
+                       }
+                   },
+                   error: function(err) {
+                       $('#weatherResult').html('<p class="error-message">Failed to fetch weather data</p>');
+                       gtag('event', 'error', {
+                           'error_type': 'api_error',
+                           'city': selectedCity.city
+                       });
+                   }
+               });
+           }
 
-                    const year = state.elements.dobYear.val();
-                    const month = state.elements.dobMonth.val();
-                    const day = state.elements.dobDay.val();
-                    const date = `${year}-${month}-${day}`;
+           $('#dobDay, #dobMonth, #dobYear, #friendNameInput').on('change', checkFormCompletion);
+           $('#friendNameInput').on('input', checkFormCompletion);
+           $('#getWeather').on('click', checkWeather);
+           $('#tempToggle').on('change', function() {
+               isFahrenheit = !this.checked;
+               if($('#weatherResult').html()) {
+                   checkWeather();
+               }
+               gtag('event', 'toggle_temperature_unit', {
+                   'unit': isFahrenheit ? 'fahrenheit' : 'celsius'
+               });
+           });
 
-                    // Check cache first
-                    const cacheKey = `${date}_${state.selectedCity.latitude}_${state.selectedCity.longitude}`;
-                    const cachedData = WeatherApp.cache.get(cacheKey);
-                    
-                    if (cachedData) {
-                        ui.updateWeatherDisplay(cachedData, date);
-                        return;
-                    }
+           yearSelect.on('focus', function() {
+               var defaultOption = $(this).find('option[value="2000"]');
+               var defaultIndex = defaultOption.index();
+               var selectElement = this;
+               
+               setTimeout(function() {
+                   selectElement.scrollTop = defaultOption.offset().top - selectElement.offsetTop - (selectElement.offsetHeight / 2) + (defaultOption.height() / 2);
+               }, 0);
+           });
+       });
 
-                    ui.showLoading();
-
-                    try {
-                        const data = await api.fetchWeatherWithRetry({
-                            latitude: state.selectedCity.latitude,
-                            longitude: state.selectedCity.longitude,
-                            date: date
-                        });
-
-                        // Cache the result
-                        WeatherApp.cache.set(cacheKey, data);
-                        
-                        ui.updateWeatherDisplay(data, date);
-
-                    } catch (error) {
-                        ui.showError('Failed to fetch weather data. Please try again.');
-                        gtag('event', 'error', {
-                            'error_type': 'api_error',
-                            'city': state.selectedCity.city,
-                            'message': error.message
-                        });
-                    }
-                },
-
-                checkFormCompletion() {
-                    const { state } = WeatherApp;
-                    const hasCity = state.selectedCity !== null;
-                    const hasDate = state.elements.dobDay.val() && 
-                                  state.elements.dobMonth.val() && 
-                                  state.elements.dobYear.val();
-
-                    state.elements.getWeather.toggle(hasCity && hasDate);
-                },
-
-                async shareResults(messageText) {
-                    if (!WeatherApp.state.features.share) return;
-
-                    try {
-                        await navigator.share({
-                            title: 'Birthday Weather Time Machine',
-                            text: messageText
-                        });
-                        
-                        gtag('event', 'share', {
-                            'method': 'native_share',
-                            'content_type': 'weather_result'
-                        });
-                    } catch (err) {
-                        if (err.name !== 'AbortError') {
-                            console.error('Error sharing:', err);
-                            gtag('event', 'share_error', {
-                                'error_type': err.name
-                            });
-                        }
-                    }
-                }
-            },
-
-            // Initialization
-            init() {
-                // Cache DOM elements
-                this.state.elements = {
-                    dobMonth: $('#dobMonth'),
-                    dobDay: $('#dobDay'),
-                    dobYear: $('#dobYear'),
-                    searchInput: $('#searchInput'),
-                    weatherResult: $('#weatherResult'),
-                    getWeather: $('#getWeather'),
-                    tempToggle: $('#tempToggle')
-                };
-
-                // Initialize date selectors
-                const months = ["January", "February", "March", "April", "May", "June", 
-                              "July", "August", "September", "October", "November", "December"];
-                
-                months.forEach((month, i) => {
-                    this.state.elements.dobMonth.append(
-                        $('<option></option>')
-                            .val((i + 1).toString().padStart(2, '0'))
-                            .text(month)
-                    );
-                });
-
-                for (let i = 1; i <= 31; i++) {
-                    this.state.elements.dobDay.append(
-                        $('<option></option>')
-                            .val(i.toString().padStart(2, '0'))
-                            .text(i)
-                    );
-                }
-
-                const currentYear = new Date().getFullYear();
-                for (let i = currentYear; i >= 1940; i--) {
-                    this.state.elements.dobYear.append(
-                        $('<option></option>').val(i).text(i)
-                    );
-                }
-                this.state.elements.dobYear.val(2000);
-
-                // Setup event listeners
-                this.state.elements.dobDay.on('change', () => this.actions.checkFormCompletion());
-                this.state.elements.dobMonth.on('change', () => this.actions.checkFormCompletion());
-                this.state.elements.dobYear.on('change', () => this.actions.checkFormCompletion());
-                this.state.elements.getWeather.on('click', () => this.actions.checkWeather());
-                this.state.elements.tempToggle.on('change', function() {
-                    WeatherApp.state.isFahrenheit = !this.checked;
-                    if(WeatherApp.state.elements.weatherResult.html()) {
-                        WeatherApp.actions.checkWeather();
-                    }
-                    gtag('event', 'toggle_temperature_unit', {
-                        'unit': WeatherApp.state.isFahrenheit ? 'fahrenheit' : 'celsius'
-                    });
-                });
-
-                // Setup autocomplete
-                this.api.setupAutocomplete();
-
-                // Default year scroll position
-                this.state.elements.dobYear.on('focus', function() {
-                    const defaultOption = $(this).find('option[value="2000"]');
-                    const defaultIndex = defaultOption.index();
-                    const selectElement = this;
-                    
-                    setTimeout(function() {
-                        selectElement.scrollTop = defaultOption.offset().top - 
-                            selectElement.offsetTop - 
-                            (selectElement.offsetHeight / 2) + 
-                            (defaultOption.height() / 2);
-                    }, 0);
-                });
-            }
-        };
-
-        // Initialize the application when the document is ready
-        $(document).ready(() => WeatherApp.init());
-    </script>
+       // Global function for share button click
+       function shareResults(messageText) {
+           const decodedMessage = decodeURIComponent(messageText);
+           if (navigator.share) {
+               navigator.share({
+                   title: 'Birthday Weather Time Machine',
+                   text: decodedMessage
+               }).catch((err) => {
+                   if (err.name !== 'AbortError') {
+                       console.error('Error sharing:', err);
+                       gtag('event', 'share_error', {
+                           'error_type': err.name
+                       });
+                   }
+               });
+           }
+       }
+   </script>
 </body>
 </html>
