@@ -3,9 +3,12 @@
 <head>
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+   <meta name="apple-mobile-web-app-capable" content="yes">
+   <meta name="apple-mobile-web-app-status-bar-style" content="default">
+   <meta name="format-detection" content="telephone=no">
    <title>Birthday Weather Time Machine</title>
    <!-- Google Analytics (GA4) -->
-   <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+   <script async src="https://www.googletagmanager.com/gtag/js?id=G-38RTREJJ2S"></script>
    <script>
      window.dataLayer = window.dataLayer || [];
      function gtag(){dataLayer.push(arguments);}
@@ -17,11 +20,13 @@
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
    <style>
        body {
-           font-family: Arial, sans-serif;
+           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
            max-width: 800px;
            margin: 0 auto;
            padding: 20px;
            background-color: #f8f9fa;
+           -webkit-font-smoothing: antialiased;
+           -moz-osx-font-smoothing: grayscale;
        }
        .header {
            text-align: center;
@@ -41,6 +46,7 @@
            margin-right: 10px;
            border: 1px solid #ddd;
            border-radius: 6px;
+           -webkit-appearance: none;
        }
        #weatherResult {
            margin-top: 20px;
@@ -73,6 +79,7 @@
            font-size: 16px;
            transition: background-color 0.3s;
            display: none;
+           -webkit-appearance: none;
        }
        .search-button:hover {
            background-color: #2980b9;
@@ -148,6 +155,7 @@
            border: none;
            border-radius: 5px;
            background-color: #ecf0f1;
+           -webkit-appearance: none;
        }
        .mode-button.active {
            background-color: #3498db;
@@ -161,6 +169,7 @@
            border: 1px solid #ddd;
            border-radius: 6px;
            text-align: center;
+           -webkit-appearance: none;
        }
        .friend-input-container {
            text-align: center;
@@ -177,32 +186,6 @@
            -webkit-transform: none !important;
            transform: none !important;
        }
-       .share-buttons {
-           display: none;
-           justify-content: center;
-           gap: 15px;
-           margin-top: 10px;
-       }
-       .share-button {
-           padding: 15px 25px;
-           border: none;
-           border-radius: 8px;
-           cursor: pointer;
-           color: white;
-           text-decoration: none;
-           display: inline-flex;
-           align-items: center;
-           gap: 10px;
-           font-size: 16px;
-           transition: opacity 0.3s;
-           width: auto;
-       }
-       .share-button:hover {
-           opacity: 0.9;
-       }
-       .share-whatsapp { background-color: #25D366; }
-       .share-email { background-color: #D44638; }
-       .share-sms { background-color: #35CD96; }
        .share-trigger {
            background-color: #3498db;
            color: white;
@@ -222,6 +205,11 @@
            position: static !important;
            opacity: 1 !important;
            visibility: visible !important;
+           z-index: 1000;
+           touch-action: manipulation;
+       }
+       .share-trigger:hover {
+           background-color: #2980b9;
        }
        .weather-description {
            font-size: 1.2em;
@@ -249,6 +237,7 @@
        @media (max-width: 768px) {
            body {
                padding: 10px;
+               -webkit-overflow-scrolling: touch;
            }
            
            .dob-container {
@@ -268,17 +257,6 @@
                word-wrap: break-word;
            }
 
-           .share-buttons {
-               flex-direction: column;
-               align-items: center;
-           }
-
-           .share-button {
-               width: 100%;
-               justify-content: center;
-               margin: 5px 0;
-           }
-
            .mode-button {
                margin: 5px;
                width: calc(50% - 20px);
@@ -289,6 +267,9 @@
                width: auto !important;
                min-width: 200px;
                margin: 10px auto !important;
+               position: relative !important;
+               z-index: 1000;
+               -webkit-tap-highlight-color: transparent;
            }
 
            .share-container {
@@ -296,6 +277,8 @@
                width: 100% !important;
                visibility: visible !important;
                margin: 20px 0;
+               position: relative !important;
+               z-index: 1000;
            }
 
            .weather-icon {
@@ -310,19 +293,24 @@
        /* Safari-specific fixes */
        @supports (-webkit-touch-callout: none) {
            .share-container {
-               position: relative;
-               opacity: 1;
-               visibility: visible;
-               -webkit-transform: none;
-               transform: none;
+               position: relative !important;
+               opacity: 1 !important;
+               visibility: visible !important;
+               -webkit-transform: none !important;
+               transform: none !important;
+               z-index: 1000;
            }
            
            .share-trigger {
-               opacity: 1;
-               visibility: visible;
+               opacity: 1 !important;
+               visibility: visible !important;
                -webkit-appearance: none;
                display: -webkit-inline-box !important;
                display: -webkit-inline-flex !important;
+               position: relative !important;
+               z-index: 1000;
+               cursor: pointer;
+               -webkit-tap-highlight-color: transparent;
            }
        }
 
@@ -334,7 +322,7 @@
            z-index: 9999;
            background-color: white;
            border-radius: 6px;
-           box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
            border: 1px solid #ddd;
        }
 
@@ -392,7 +380,8 @@
    </div>
 
    <div id="weatherResult"></div>
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
    <script>
        $(document).ready(function() {
@@ -405,6 +394,11 @@
                const mode = $(this).data('mode');
                $('#friendNameInput').toggle(mode === 'friend');
                updatePlaceholders(mode);
+               
+               // Track mode switch
+               gtag('event', 'switch_mode', {
+                   'mode': mode
+               });
            });
 
            function updatePlaceholders(mode) {
@@ -444,34 +438,52 @@
                return weatherIcons[weatherCode] || '❓';
            }
 
-           function getWeatherDescription(weatherCode, city) {
+           function getWeatherDescription(weatherCode) {
                const descriptions = {
-                   0: `in ${city}, it was a clear, sunny day`,
-                   1: `in ${city}, it was mostly clear`,
-                   2: `in ${city}, it was partly cloudy`,
-                   3: `in ${city}, it was overcast`,
-                   45: `in ${city}, it was foggy`,
-                   48: `in ${city}, it was foggy with frost`,
-                   51: `in ${city}, there was a light drizzle`,
-                   53: `in ${city}, there was a moderate drizzle`,
-                   55: `in ${city}, there was a heavy drizzle`,
-                   61: `in ${city}, there was light rain`,
-                   63: `in ${city}, there was moderate rain`,
-                   65: `in ${city}, there was heavy rain`,
-                   71: `in ${city}, it was snowing lightly`,
-                   73: `in ${city}, it was snowing moderately`,
-                   75: `in ${city}, it was snowing heavily`,
-                   77: `in ${city}, there were snow grains`,
-                   80: `in ${city}, there were light rain showers`,
-                   81: `in ${city}, there were moderate rain showers`,
-                   82: `in ${city}, there were violent rain showers`,
-                   85: `in ${city}, there were light snow showers`,
-                   86: `in ${city}, there were heavy snow showers`,
-                   95: `in ${city}, there was a thunderstorm`,
-                   96: `in ${city}, there was a thunderstorm with light hail`,
-                   99: `in ${city}, there was a thunderstorm with heavy hail`
+                   0: 'a clear, sunny day',
+                   1: 'mostly clear',
+                   2: 'partly cloudy',
+                   3: 'overcast',
+                   45: 'foggy',
+                   48: 'foggy with frost',
+                   51: 'there was a light drizzle',
+                   53: 'there was a moderate drizzle',
+                   55: 'there was a heavy drizzle',
+                   61: 'there was light rain',
+                   63: 'there was moderate rain',
+                   65: 'there was heavy rain',
+                   71: 'it was snowing lightly',
+                   73: 'it was snowing moderately',
+                   75: 'it was snowing heavily',
+                   77: 'there were snow grains',
+                   80: 'there were light rain showers',
+                   81: 'there were moderate rain showers',
+                   82: 'there were violent rain showers',
+                   85: 'there were light snow showers',
+                   86: 'there were heavy snow showers',
+                   95: 'there was a thunderstorm',
+                   96: 'there was a thunderstorm with light hail',
+                   99: 'there was a thunderstorm with heavy hail'
                };
                return descriptions[weatherCode] || 'the weather conditions are unknown';
+           }
+
+           function getTimeDifference(birthDate) {
+               const today = new Date();
+               const birth = new Date(birthDate);
+               
+               let years = today.getFullYear() - birth.getFullYear();
+               let months = today.getMonth() - birth.getMonth();
+               let days = today.getDate() - birth.getDate();
+
+               if (months < 0 || (months === 0 && days < 0)) {
+                   years--;
+               }
+
+               const yearText = years === 1 ? 'year' : 'years';
+               const dayText = days === 1 ? 'day' : 'days';
+               
+               return `${years} ${yearText} and ${Math.abs(days)} ${dayText}`;
            }
 
            $("#searchInput").autocomplete({
@@ -500,6 +512,9 @@
                    selectedCity = ui.item.item;
                    $("#searchInput").val(ui.item.label);
                    checkFormCompletion();
+                   gtag('event', 'select_city', {
+                       'city': ui.item.item.city
+                   });
                    return false;
                },
                autoFocus: false,
@@ -524,18 +539,18 @@
                            title: 'Birthday Weather Time Machine',
                            text: messageText
                        });
-                       // Track successful share
                        gtag('event', 'share', {
                            'method': 'native_share',
                            'content_type': 'weather_result'
                        });
                    } catch (err) {
                        if (err.name !== 'AbortError') {
-                           $('.share-buttons').slideToggle();
+                           console.error('Error sharing:', err);
+                           gtag('event', 'share_error', {
+                               'error_type': err.name
+                           });
                        }
                    }
-               } else {
-                   $('.share-buttons').slideToggle();
                }
            }
 
@@ -549,7 +564,6 @@
                const isFriendMode = $('.mode-button.active').data('mode') === 'friend';
                const friendName = isFriendMode ? $('#friendNameInput').val() : '';
 
-               // Track weather search
                gtag('event', 'search_weather', {
                    'mode': isFriendMode ? 'friend' : 'personal',
                    'city': selectedCity.city,
@@ -575,59 +589,39 @@
                                data.daily.temperature_2m_min[0].toFixed(1);
                            const unit = isFahrenheit ? '°F' : '°C';
                            const weatherIcon = getWeatherIcon(data.daily.weathercode[0]);
-                           const weatherDesc = getWeatherDescription(data.daily.weathercode[0], selectedCity.city);
-                           const formattedDate = `${months[parseInt(month)-1]} ${parseInt(day)}, ${year}`;
+                           const weatherDesc = getWeatherDescription(data.daily.weathercode[0]);
+                           const timeDiff = getTimeDifference(`${year}-${month}-${day}`);
 
-                           const title = isFriendMode ? 
-                               `🎉 Happy Birthday, ${friendName}! 🎂` :
-                               `On your birthday in ${selectedCity.city}...`;
-
-                           const messageText = isFriendMode ?
-                               `🎈 Hey ${friendName}! On the day you were born (${formattedDate}), ${weatherDesc}! Here's to making more amazing memories, rain or shine! ${weatherIcon} 🎉` :
-                               `On my birthday (${formattedDate}) ${weatherDesc} ${weatherIcon}`;
+                           let title, messageText;
+                           if (isFriendMode) {
+                               title = `Happy Birthday, ${friendName}!`;
+                               messageText = `On your birthday in ${selectedCity.city}, ${timeDiff} ago, it was ${weatherDesc}! ${weatherIcon}`;
+                           } else {
+                               title = `On your birthday in ${selectedCity.city}, ${timeDiff} ago, it was ${weatherDesc}!`;
+                               messageText = title;
+                           }
 
                            $('#weatherResult').html(`
                                <h3 class="birthday-message">${title}</h3>
                                <div class="weather-icon">${weatherIcon}</div>
-                               <div class="weather-description">${weatherDesc}</div>
                                <div class="temp-info">
                                    <p>High Temperature: ${maxTemp}${unit}</p>
                                    <p>Low Temperature: ${minTemp}${unit}</p>
                                    <p>Precipitation: ${data.daily.precipitation_sum[0]} mm</p>
                                </div>
                                <div class="share-container">
-                                   <button class="share-trigger" onclick="shareResults('${encodeURIComponent(messageText)}')">
+                                   <button class="share-trigger" onclick="shareResults('${messageText}')">
                                        <i class="fas fa-share-alt"></i> Share Results
                                    </button>
-                                   <div class="share-buttons">
-                                       <a href="whatsapp://send?text=${encodeURIComponent(messageText)}" 
-                                          class="share-button share-whatsapp"
-                                          onclick="gtag('event', 'share', {'method': 'whatsapp'});">
-                                           <i class="fab fa-whatsapp"></i> Share via WhatsApp
-                                       </a>
-                                       <a href="mailto:?subject=Birthday Weather&body=${encodeURIComponent(messageText)}" 
-                                          class="share-button share-email"
-                                          onclick="gtag('event', 'share', {'method': 'email'});">
-                                           <i class="far fa-envelope"></i> Share via Email
-                                       </a>
-                                       <a href="sms:?&body=${encodeURIComponent(messageText)}" 
-                                          class="share-button share-sms"
-                                          onclick="gtag('event', 'share', {'method': 'sms'});">
-                                           <i class="far fa-comment"></i> Share via Text Message
-                                       </a>
-                                   </div>
                                </div>
                            `);
 
-                           // Track successful weather result
                            gtag('event', 'view_weather_result', {
                                'weather_code': data.daily.weathercode[0],
                                'city': selectedCity.city
                            });
                        } else {
                            $('#weatherResult').html('<p class="error-message">Weather data not available for this date</p>');
-                           
-                           // Track error
                            gtag('event', 'error', {
                                'error_type': 'no_weather_data',
                                'city': selectedCity.city
@@ -636,8 +630,6 @@
                    },
                    error: function(err) {
                        $('#weatherResult').html('<p class="error-message">Failed to fetch weather data</p>');
-                       
-                       // Track error
                        gtag('event', 'error', {
                            'error_type': 'api_error',
                            'city': selectedCity.city
@@ -654,6 +646,9 @@
                if($('#weatherResult').html()) {
                    checkWeather();
                }
+               gtag('event', 'toggle_temperature_unit', {
+                   'unit': isFahrenheit ? 'fahrenheit' : 'celsius'
+               });
            });
 
            yearSelect.on('focus', function() {
@@ -667,16 +662,21 @@
            });
        });
 
+       // Global function for share button click
        function shareResults(messageText) {
+           const decodedMessage = decodeURIComponent(messageText);
            if (navigator.share) {
                navigator.share({
                    title: 'Birthday Weather Time Machine',
-                   text: decodeURIComponent(messageText)
-               }).catch(() => {
-                   $('.share-buttons').slideToggle();
+                   text: decodedMessage
+               }).catch((err) => {
+                   if (err.name !== 'AbortError') {
+                       console.error('Error sharing:', err);
+                       gtag('event', 'share_error', {
+                           'error_type': err.name
+                       });
+                   }
                });
-           } else {
-               $('.share-buttons').slideToggle();
            }
        }
    </script>
