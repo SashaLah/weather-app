@@ -16,6 +16,8 @@
 
      gtag('config', 'G-38RTREJJ2S');
    </script>
+   <!-- DOMPurify for security -->
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.3/purify.min.js"></script>
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
    <style>
@@ -382,303 +384,317 @@
    <div id="weatherResult"></div>
 </body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
-   <script>
-       $(document).ready(function() {
-           let selectedCity = null;
-           let isFahrenheit = true;
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<script>
+    $(document).ready(function() {
+        let selectedCity = null;
+        let isFahrenheit = true;
 
-           $('.mode-button').click(function() {
-               $('.mode-button').removeClass('active');
-               $(this).addClass('active');
-               const mode = $(this).data('mode');
-               $('#friendNameInput').toggle(mode === 'friend');
-               updatePlaceholders(mode);
-               
-               // Track mode switch
-               gtag('event', 'switch_mode', {
-                   'mode': mode
-               });
-           });
+        // Security utility function for input sanitization
+        function sanitizeInput(input) {
+            return DOMPurify.sanitize(input.trim());
+        }
 
-           function updatePlaceholders(mode) {
-               const searchPlaceholder = mode === 'friend' ? "Enter friend's birthplace" : "Enter your birthplace";
-               $('#searchInput').attr('placeholder', searchPlaceholder);
-           }
+        $('.mode-button').click(function() {
+            $('.mode-button').removeClass('active');
+            $(this).addClass('active');
+            const mode = $(this).data('mode');
+            $('#friendNameInput').toggle(mode === 'friend');
+            updatePlaceholders(mode);
+            
+            gtag('event', 'switch_mode', {
+                'mode': mode
+            });
+        });
 
-           var monthSelect = $('#dobMonth');
-           var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-           for (var i = 0; i < 12; i++) {
-               monthSelect.append($('<option></option>').val((i+1).toString().padStart(2, '0')).html(months[i]));
-           }
+        function updatePlaceholders(mode) {
+            const searchPlaceholder = mode === 'friend' ? "Enter friend's birthplace" : "Enter your birthplace";
+            $('#searchInput').attr('placeholder', searchPlaceholder);
+        }
 
-           var daySelect = $('#dobDay');
-           for (var i = 1; i <= 31; i++) {
-               daySelect.append($('<option></option>').val(i.toString().padStart(2, '0')).html(i));
-           }
+        var monthSelect = $('#dobMonth');
+        var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        for (var i = 0; i < 12; i++) {
+            monthSelect.append($('<option></option>').val((i+1).toString().padStart(2, '0')).html(months[i]));
+        }
 
-           var yearSelect = $('#dobYear');
-           var currentYear = new Date().getFullYear();
-           for (var i = currentYear; i >= 1940; i--) {
-               yearSelect.append($('<option></option>').val(i).html(i));
-           }
-           yearSelect.val(2000);
+        var daySelect = $('#dobDay');
+        for (var i = 1; i <= 31; i++) {
+            daySelect.append($('<option></option>').val(i.toString().padStart(2, '0')).html(i));
+        }
 
-           function celsiusToFahrenheit(celsius) {
-               return (celsius * 9/5) + 32;
-           }
+        var yearSelect = $('#dobYear');
+        var currentYear = new Date().getFullYear();
+        for (var i = currentYear; i >= 1940; i--) {
+            yearSelect.append($('<option></option>').val(i).html(i));
+        }
+        yearSelect.val(2000);
 
-           function getWeatherIcon(weatherCode) {
-               const weatherIcons = {
-                   0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️',
-                   51: '🌧️', 53: '🌧️', 55: '🌧️', 61: '🌧️', 63: '🌧️', 65: '🌧️',
-                   71: '🌨️', 73: '🌨️', 75: '🌨️', 77: '🌨️', 80: '🌧️', 81: '🌧️',
-                   82: '🌧️', 85: '🌨️', 86: '🌨️', 95: '⛈️', 96: '⛈️', 99: '⛈️'
-               };
-               return weatherIcons[weatherCode] || '❓';
-           }
+        function celsiusToFahrenheit(celsius) {
+            return (celsius * 9/5) + 32;
+        }
 
-           function getWeatherDescription(weatherCode) {
-               const descriptions = {
-                   0: 'a clear, sunny day',
-                   1: 'mostly clear',
-                   2: 'partly cloudy',
-                   3: 'overcast',
-                   45: 'foggy',
-                   48: 'foggy with frost',
-                   51: 'there was a light drizzle',
-                   53: 'there was a moderate drizzle',
-                   55: 'there was a heavy drizzle',
-                   61: 'there was light rain',
-                   63: 'there was moderate rain',
-                   65: 'there was heavy rain',
-                   71: 'it was snowing lightly',
-                   73: 'it was snowing moderately',
-                   75: 'it was snowing heavily',
-                   77: 'there were snow grains',
-                   80: 'there were light rain showers',
-                   81: 'there were moderate rain showers',
-                   82: 'there were violent rain showers',
-                   85: 'there were light snow showers',
-                   86: 'there were heavy snow showers',
-                   95: 'there was a thunderstorm',
-                   96: 'there was a thunderstorm with light hail',
-                   99: 'there was a thunderstorm with heavy hail'
-               };
-               return descriptions[weatherCode] || 'the weather conditions are unknown';
-           }
+        function getWeatherIcon(weatherCode) {
+            const weatherIcons = {
+                0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️',
+                51: '🌧️', 53: '🌧️', 55: '🌧️', 61: '🌧️', 63: '🌧️', 65:'🌧️',
+                71: '🌨️', 73: '🌨️', 75: '🌨️', 77: '🌨️', 80: '🌧️', 81: '🌧️',
+                82: '🌧️', 85: '🌨️', 86: '🌨️', 95: '⛈️', 96: '⛈️', 99: '⛈️'
+            };
+            return weatherIcons[weatherCode] || '❓';
+        }
 
-           function getTimeDifference(birthDate) {
-               const today = new Date();
-               const birth = new Date(birthDate);
-               
-               let years = today.getFullYear() - birth.getFullYear();
-               let months = today.getMonth() - birth.getMonth();
-               let days = today.getDate() - birth.getDate();
+        function getWeatherDescription(weatherCode) {
+            const descriptions = {
+                0: 'clear and sunny',
+                1: 'mostly clear',
+                2: 'partly cloudy',
+                3: 'overcast',
+                45: 'foggy',
+                48: 'foggy with frost',
+                51: 'drizzling lightly',
+                53: 'drizzling moderately',
+                55: 'drizzling heavily',
+                61: 'raining lightly',
+                63: 'raining moderately',
+                65: 'raining heavily',
+                71: 'snowing lightly',
+                73: 'snowing moderately',
+                75: 'snowing heavily',
+                77: 'snowing with snow grains',
+                80: 'having light rain showers',
+                81: 'having moderate rain showers',
+                82: 'having violent rain showers',
+                85: 'having light snow showers',
+                86: 'having heavy snow showers',
+                95: 'thundering',
+                96: 'thundering with light hail',
+                99: 'thundering with heavy hail'
+            };
+            return descriptions[weatherCode] || 'experiencing unknown weather conditions';
+        }
 
-               if (months < 0 || (months === 0 && days < 0)) {
-                   years--;
-               }
+        function getTimeDifference(birthDate) {
+            const today = new Date();
+            const birth = new Date(birthDate);
+            
+            let years = today.getFullYear() - birth.getFullYear();
+            let months = today.getMonth() - birth.getMonth();
+            let days = today.getDate() - birth.getDate();
 
-               const yearText = years === 1 ? 'year' : 'years';
-               const dayText = days === 1 ? 'day' : 'days';
-               
-               return `${years} ${yearText} and ${Math.abs(days)} ${dayText}`;
-           }
+            if (months < 0 || (months === 0 && days < 0)) {
+                years--;
+            }
 
-           $("#searchInput").autocomplete({
-               source: function(request, response) {
-                   $.ajax({
-                       url: "/cities",
-                       dataType: "json",
-                       data: { term: request.term },
-                       success: function(data) {
-                           response(data.map(function(item) {
-                               let label = item.city;
-                               if (item.state) label += `, ${item.state}`;
-                               if (item.country) label += `, ${item.country}`;
-                               
-                               return {
-                                   label: label,
-                                   value: item.city,
-                                   item: item
-                               };
-                           }));
-                       }
-                   });
-               },
-               minLength: 2,
-               select: function(event, ui) {
-                   selectedCity = ui.item.item;
-                   $("#searchInput").val(ui.item.label);
-                   checkFormCompletion();
-                   gtag('event', 'select_city', {
-                       'city': ui.item.item.city
-                   });
-                   return false;
-               },
-               autoFocus: false,
-               delay: 300
-           });
+            const yearText = years === 1 ? 'year' : 'years';
+            const dayText = days === 1 ? 'day' : 'days';
+            
+            return `${years} ${yearText} and ${Math.abs(days)} ${dayText}`;
+        }
 
-           function checkFormCompletion() {
-               const day = $('#dobDay').val();
-               const month = $('#dobMonth').val();
-               const year = $('#dobYear').val();
-               const hasCity = selectedCity !== null;
-               const isFriendMode = $('.mode-button.active').data('mode') === 'friend';
-               const hasFriendName = !isFriendMode || $('#friendNameInput').val().trim() !== '';
+        $("#searchInput").autocomplete({
+            source: function(request, response) {
+                $.ajax({
+                    url: "/cities",
+                    dataType: "json",
+                    data: { term: sanitizeInput(request.term) },
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function(data) {
+                        response(data.map(function(item) {
+                            let label = item.city;
+                            if (item.state) label += `, ${item.state}`;
+                            if (item.country) label += `, ${item.country}`;
+                            
+                            return {
+                                label: label,
+                                value: item.city,
+                                item: item
+                            };
+                        }));
+                    },
+                    error: function(err) {
+                        console.error('Error fetching cities:', err);
+                        response([]);
+                    }
+                });
+            },
+            minLength: 2,
+            select: function(event, ui) {
+                selectedCity = ui.item.item;
+                $("#searchInput").val(ui.item.label);
+                checkFormCompletion();
+                gtag('event', 'select_city', {
+                    'city': ui.item.item.city
+                });
+                return false;
+            },
+            autoFocus: false,
+            delay: 300
+        });
 
-               $('#getWeather').toggle(day && month && year && hasCity && hasFriendName);
-           }
+        function checkFormCompletion() {
+            const day = $('#dobDay').val();
+            const month = $('#dobMonth').val();
+            const year = $('#dobYear').val();
+            const hasCity = selectedCity !== null;
+            const isFriendMode = $('.mode-button.active').data('mode') === 'friend';
+            const hasFriendName = !isFriendMode || $('#friendNameInput').val().trim() !== '';
 
-           async function shareResults(messageText) {
-               if (navigator.share) {
-                   try {
-                       await navigator.share({
-                           title: 'Birthday Weather Time Machine',
-                           text: messageText
-                       });
-                       gtag('event', 'share', {
-                           'method': 'native_share',
-                           'content_type': 'weather_result'
-                       });
-                   } catch (err) {
-                       if (err.name !== 'AbortError') {
-                           console.error('Error sharing:', err);
-                           gtag('event', 'share_error', {
-                               'error_type': err.name
-                           });
-                       }
-                   }
-               }
-           }
+            $('#getWeather').toggle(day && month && year && hasCity && hasFriendName);
+        }
 
-           function checkWeather() {
-               if (!selectedCity) return;
-               
-               const year = $('#dobYear').val();
-               const month = $('#dobMonth').val();
-               const day = $('#dobDay').val();
-               const date = `${year}-${month}-${day}`;
-               const isFriendMode = $('.mode-button.active').data('mode') === 'friend';
-               const friendName = isFriendMode ? $('#friendNameInput').val() : '';
+        async function shareResults(messageText) {
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'Birthday Weather Time Machine',
+                        text: sanitizeInput(messageText)
+                    });
+                    gtag('event', 'share', {
+                        'method': 'native_share',
+                        'content_type': 'weather_result'
+                    });
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error('Error sharing:', err);
+                        gtag('event', 'share_error', {
+                            'error_type': err.name
+                        });
+                    }
+                }
+            }
+        }
 
-               gtag('event', 'search_weather', {
-                   'mode': isFriendMode ? 'friend' : 'personal',
-                   'city': selectedCity.city,
-                   'year': year
-               });
+        function checkWeather() {
+            if (!selectedCity) return;
+            
+            const year = $('#dobYear').val();
+            const month = $('#dobMonth').val();
+            const day = $('#dobDay').val();
+            const date = `${year}-${month}-${day}`;
+            const isFriendMode = $('.mode-button.active').data('mode') === 'friend';
+            const friendName = isFriendMode ? sanitizeInput($('#friendNameInput').val()) : '';
 
-               $('#weatherResult').html('Loading...');
+            gtag('event', 'search_weather', {
+                'mode': isFriendMode ? 'friend' : 'personal',
+                'city': selectedCity.city,
+                'year': year
+            });
 
-               $.ajax({
-                   url: "/weather",
-                   data: {
-                       latitude: selectedCity.latitude,
-                       longitude: selectedCity.longitude,
-                       date: date
-                   },
-                   success: function(data) {
-                       if (data.daily && data.daily.temperature_2m_max) {
-                           const maxTemp = isFahrenheit ? 
-                               celsiusToFahrenheit(data.daily.temperature_2m_max[0]).toFixed(1) : 
-                               data.daily.temperature_2m_max[0].toFixed(1);
-                           const minTemp = isFahrenheit ? 
-                               celsiusToFahrenheit(data.daily.temperature_2m_min[0]).toFixed(1) : 
-                               data.daily.temperature_2m_min[0].toFixed(1);
-                           const unit = isFahrenheit ? '°F' : '°C';
-                           const weatherIcon = getWeatherIcon(data.daily.weathercode[0]);
-                           const weatherDesc = getWeatherDescription(data.daily.weathercode[0]);
-                           const timeDiff = getTimeDifference(`${year}-${month}-${day}`);
+            $('#weatherResult').html('<div class="loading">Loading...</div>');
 
-                           let title, messageText;
-                           if (isFriendMode) {
-                               title = `Happy Birthday, ${friendName}!`;
-                               messageText = `On your birthday in ${selectedCity.city}, ${timeDiff} ago, it was ${weatherDesc}! ${weatherIcon}`;
-                           } else {
-                               title = `On your birthday in ${selectedCity.city}, ${timeDiff} ago, it was ${weatherDesc}!`;
-                               messageText = title;
-                           }
+            $.ajax({
+                url: "/weather",
+                data: {
+                    latitude: selectedCity.latitude,
+                    longitude: selectedCity.longitude,
+                    date: date
+                },
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(data) {
+                    if (data.daily && data.daily.temperature_2m_max) {
+                        const maxTemp = isFahrenheit ? 
+                            celsiusToFahrenheit(data.daily.temperature_2m_max[0]).toFixed(1) : 
+                            data.daily.temperature_2m_max[0].toFixed(1);
+                        const minTemp = isFahrenheit ? 
+                            celsiusToFahrenheit(data.daily.temperature_2m_min[0]).toFixed(1) : 
+                            data.daily.temperature_2m_min[0].toFixed(1);
+                        const unit = isFahrenheit ? '°F' : '°C';
+                        const weatherIcon = getWeatherIcon(data.daily.weathercode[0]);
+                        const weatherDesc = getWeatherDescription(data.daily.weathercode[0]);
+                        const timeDiff = getTimeDifference(`${year}-${month}-${day}`);
 
-                           $('#weatherResult').html(`
-                               <h3 class="birthday-message">${title}</h3>
-                               <div class="weather-icon">${weatherIcon}</div>
-                               <div class="temp-info">
-                                   <p>High Temperature: ${maxTemp}${unit}</p>
-                                   <p>Low Temperature: ${minTemp}${unit}</p>
-                                   <p>Precipitation: ${data.daily.precipitation_sum[0]} mm</p>
-                               </div>
-                               <div class="share-container">
-                                   <button class="share-trigger" onclick="shareResults('${messageText}')">
-                                       <i class="fas fa-share-alt"></i> Share Results
-                                   </button>
-                               </div>
-                           `);
+                        let title, messageText;
+                        if (isFriendMode) {
+                            title = `Happy Birthday, ${friendName}!`;
+                            messageText = `On your birthday in ${selectedCity.city}, ${timeDiff} ago, it was ${weatherDesc}! ${weatherIcon}`;
+                        } else {
+                            title = `On your birthday in ${selectedCity.city}, ${timeDiff} ago, it was ${weatherDesc}!`;
+                            messageText = title;
+                        }
 
-                           gtag('event', 'view_weather_result', {
-                               'weather_code': data.daily.weathercode[0],
-                               'city': selectedCity.city
-                           });
-                       } else {
-                           $('#weatherResult').html('<p class="error-message">Weather data not available for this date</p>');
-                           gtag('event', 'error', {
-                               'error_type': 'no_weather_data',
-                               'city': selectedCity.city
-                           });
-                       }
-                   },
-                   error: function(err) {
-                       $('#weatherResult').html('<p class="error-message">Failed to fetch weather data</p>');
-                       gtag('event', 'error', {
-                           'error_type': 'api_error',
-                           'city': selectedCity.city
-                       });
-                   }
-               });
-           }
+                        $('#weatherResult').html(`
+                            <h3 class="birthday-message">${sanitizeInput(title)}</h3>
+                            <div class="weather-icon">${weatherIcon}</div>
+                            <div class="temp-info">
+                                <p>High Temperature: ${maxTemp}${unit}</p>
+                                <p>Low Temperature: ${minTemp}${unit}</p>
+                                <p>Precipitation: ${data.daily.precipitation_sum[0]} mm</p>
+                            </div>
+                            <div class="share-container">
+                                <button class="share-trigger" onclick="shareResults('${sanitizeInput(messageText)}')">
+                                    <i class="fas fa-share-alt"></i> Share Results
+                                </button>
+                            </div>
+                        `);
 
-           $('#dobDay, #dobMonth, #dobYear, #friendNameInput').on('change', checkFormCompletion);
-           $('#friendNameInput').on('input', checkFormCompletion);
-           $('#getWeather').on('click', checkWeather);
-           $('#tempToggle').on('change', function() {
-               isFahrenheit = !this.checked;
-               if($('#weatherResult').html()) {
-                   checkWeather();
-               }
-               gtag('event', 'toggle_temperature_unit', {
-                   'unit': isFahrenheit ? 'fahrenheit' : 'celsius'
-               });
-           });
+                        gtag('event', 'view_weather_result', {
+                            'weather_code': data.daily.weathercode[0],
+                            'city': selectedCity.city
+                        });
+                    } else {
+                        $('#weatherResult').html('<p class="error-message">Weather data not available for this date</p>');
+                        gtag('event', 'error', {
+                            'error_type': 'no_weather_data',
+                            'city': selectedCity.city
+                        });
+                    }
+                },
+                error: function(err) {
+                    $('#weatherResult').html('<p class="error-message">Failed to fetch weather data</p>');
+                    gtag('event', 'error', {
+                        'error_type': 'api_error',
+                        'city': selectedCity.city
+                    });
+                }
+            });
+        }
 
-           yearSelect.on('focus', function() {
-               var defaultOption = $(this).find('option[value="2000"]');
-               var defaultIndex = defaultOption.index();
-               var selectElement = this;
-               
-               setTimeout(function() {
-                   selectElement.scrollTop = defaultOption.offset().top - selectElement.offsetTop - (selectElement.offsetHeight / 2) + (defaultOption.height() / 2);
-               }, 0);
-           });
-       });
+        $('#dobDay, #dobMonth, #dobYear, #friendNameInput').on('change', checkFormCompletion);
+        $('#friendNameInput').on('input', checkFormCompletion);
+        $('#getWeather').on('click', checkWeather);
+        $('#tempToggle').on('change', function() {
+            isFahrenheit = !this.checked;
+            if($('#weatherResult').html()) {
+                checkWeather();
+            }
+            gtag('event', 'toggle_temperature_unit', {
+                'unit': isFahrenheit ? 'fahrenheit' : 'celsius'
+            });
+        });
 
-       // Global function for share button click
-       function shareResults(messageText) {
-           const decodedMessage = decodeURIComponent(messageText);
-           if (navigator.share) {
-               navigator.share({
-                   title: 'Birthday Weather Time Machine',
-                   text: decodedMessage
-               }).catch((err) => {
-                   if (err.name !== 'AbortError') {
-                       console.error('Error sharing:', err);
-                       gtag('event', 'share_error', {
-                           'error_type': err.name
-                       });
-                   }
-               });
-           }
-       }
-   </script>
+        yearSelect.on('focus', function() {
+            var defaultOption = $(this).find('option[value="2000"]');
+            var defaultIndex = defaultOption.index();
+            var selectElement = this;
+            
+            setTimeout(function() {
+                selectElement.scrollTop = defaultOption.offset().top - selectElement.offsetTop - (selectElement.offsetHeight / 2) + (defaultOption.height() / 2);
+            }, 0);
+        });
+    });
+
+    // Global function for share button click
+    function shareResults(messageText) {
+        const decodedMessage = decodeURIComponent(messageText);
+        if (navigator.share) {
+            navigator.share({
+                title: 'Birthday Weather Time Machine',
+                text: sanitizeInput(decodedMessage)
+            }).catch((err) => {
+                if (err.name !== 'AbortError') {
+                    console.error('Error sharing:', err);
+                    gtag('event', 'share_error', {
+                        'error_type': err.name
+                    });
+                }
+            });
+        }
+    }
+</script>
 </body>
 </html>
