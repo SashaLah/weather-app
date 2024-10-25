@@ -7,15 +7,16 @@
    <meta name="apple-mobile-web-app-status-bar-style" content="default">
    <meta name="format-detection" content="telephone=no">
    <title>Birthday Weather Time Machine</title>
+   
    <!-- Google Analytics (GA4) -->
    <script async src="https://www.googletagmanager.com/gtag/js?id=G-38RTREJJ2S"></script>
    <script>
      window.dataLayer = window.dataLayer || [];
      function gtag(){dataLayer.push(arguments);}
      gtag('js', new Date());
-
      gtag('config', 'G-38RTREJJ2S');
    </script>
+   
    <!-- DOMPurify for security -->
    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.3/purify.min.js"></script>
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
@@ -383,6 +384,7 @@
 
    <div id="weatherResult"></div>
 </body>
+</html>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
 <script>
@@ -390,9 +392,19 @@
         let selectedCity = null;
         let isFahrenheit = true;
 
-        // Security utility function for input sanitization
         function sanitizeInput(input) {
             return DOMPurify.sanitize(input.trim());
+        }
+
+        function getTemperatureDescription(temp, isFahrenheit) {
+            const celsius = isFahrenheit ? (temp - 32) * 5/9 : temp;
+            if (celsius < 0) return "very cold";
+            if (celsius < 10) return "cold";
+            if (celsius < 20) return "mild";
+            if (celsius < 25) return "warm";
+            if (celsius < 30) return "quite warm";
+            if (celsius < 35) return "hot";
+            return "very hot";
         }
 
         $('.mode-button').click(function() {
@@ -437,15 +449,15 @@
         function getWeatherIcon(weatherCode) {
             const weatherIcons = {
                 0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️',
-                51: '🌧️', 53: '🌧️', 55: '🌧️', 61: '🌧️', 63: '🌧️', 65:'🌧️',
+                51: '🌧️', 53: '🌧️', 55: '🌧️', 61: '🌧️', 63: '🌧️', 65: '🌧️',
                 71: '🌨️', 73: '🌨️', 75: '🌨️', 77: '🌨️', 80: '🌧️', 81: '🌧️',
                 82: '🌧️', 85: '🌨️', 86: '🌨️', 95: '⛈️', 96: '⛈️', 99: '⛈️'
             };
             return weatherIcons[weatherCode] || '❓';
         }
 
-        function getWeatherDescription(weatherCode) {
-            const descriptions = {
+        function getWeatherDescription(weatherCode, tempMax, tempMin, isFahrenheit) {
+            const baseDescriptions = {
                 0: 'clear and sunny',
                 1: 'mostly clear',
                 2: 'partly cloudy',
@@ -471,7 +483,11 @@
                 96: 'thundering with light hail',
                 99: 'thundering with heavy hail'
             };
-            return descriptions[weatherCode] || 'experiencing unknown weather conditions';
+
+            const maxTempDesc = getTemperatureDescription(tempMax, isFahrenheit);
+            const minTempDesc = getTemperatureDescription(tempMin, isFahrenheit);
+
+            return `It was ${baseDescriptions[weatherCode] || 'experiencing unknown conditions'}, with ${maxTempDesc} temperatures during the day and ${minTempDesc} temperatures at night`;
         }
 
         function getTimeDifference(birthDate) {
@@ -513,10 +529,6 @@
                                 item: item
                             };
                         }));
-                    },
-                    error: function(err) {
-                        console.error('Error fetching cities:', err);
-                        response([]);
                     }
                 });
             },
@@ -543,28 +555,6 @@
             const hasFriendName = !isFriendMode || $('#friendNameInput').val().trim() !== '';
 
             $('#getWeather').toggle(day && month && year && hasCity && hasFriendName);
-        }
-
-        async function shareResults(messageText) {
-            if (navigator.share) {
-                try {
-                    await navigator.share({
-                        title: 'Birthday Weather Time Machine',
-                        text: sanitizeInput(messageText)
-                    });
-                    gtag('event', 'share', {
-                        'method': 'native_share',
-                        'content_type': 'weather_result'
-                    });
-                } catch (err) {
-                    if (err.name !== 'AbortError') {
-                        console.error('Error sharing:', err);
-                        gtag('event', 'share_error', {
-                            'error_type': err.name
-                        });
-                    }
-                }
-            }
         }
 
         function checkWeather() {
@@ -605,28 +595,38 @@
                             data.daily.temperature_2m_min[0].toFixed(1);
                         const unit = isFahrenheit ? '°F' : '°C';
                         const weatherIcon = getWeatherIcon(data.daily.weathercode[0]);
-                        const weatherDesc = getWeatherDescription(data.daily.weathercode[0]);
                         const timeDiff = getTimeDifference(`${year}-${month}-${day}`);
-
-                        let title, messageText;
+                        
+                        const timeLocation = `in ${selectedCity.city}, ${timeDiff} ago`;
+                        let headerText;
+                        
                         if (isFriendMode) {
-                            title = `Happy Birthday, ${friendName}!`;
-                            messageText = `On your birthday in ${selectedCity.city}, ${timeDiff} ago, it was ${weatherDesc}! ${weatherIcon}`;
+                            headerText = `Happy Birthday, ${friendName}!`;
                         } else {
-                            title = `On your birthday in ${selectedCity.city}, ${timeDiff} ago, it was ${weatherDesc}!`;
-                            messageText = title;
+                            headerText = 'On your birthday';
                         }
 
+                        const weatherDesc = getWeatherDescription(
+                            data.daily.weathercode[0], 
+                            data.daily.temperature_2m_max[0], 
+                            data.daily.temperature_2m_min[0],
+                            isFahrenheit
+                        );
+
                         $('#weatherResult').html(`
-                            <h3 class="birthday-message">${sanitizeInput(title)}</h3>
                             <div class="weather-icon">${weatherIcon}</div>
+                            <h3 class="birthday-message">${sanitizeInput(headerText)}</h3>
+                            <div class="weather-description">
+                                <p>The weather ${timeLocation}:</p>
+                                <p>${weatherDesc}</p>
+                            </div>
                             <div class="temp-info">
                                 <p>High Temperature: ${maxTemp}${unit}</p>
                                 <p>Low Temperature: ${minTemp}${unit}</p>
                                 <p>Precipitation: ${data.daily.precipitation_sum[0]} mm</p>
                             </div>
                             <div class="share-container">
-                                <button class="share-trigger" onclick="shareResults('${sanitizeInput(messageText)}')">
+                                <button class="share-trigger" onclick="shareResults('${sanitizeInput(headerText + ' ' + timeLocation + '. ' + weatherDesc)}')">
                                     <i class="fas fa-share-alt"></i> Share Results
                                 </button>
                             </div>
@@ -678,7 +678,6 @@
         });
     });
 
-    // Global function for share button click
     function shareResults(messageText) {
         const decodedMessage = decodeURIComponent(messageText);
         if (navigator.share) {
@@ -698,3 +697,4 @@
 </script>
 </body>
 </html>
+```
