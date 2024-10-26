@@ -177,47 +177,51 @@
        }
 
        /* Updated share button styles with Safari fixes */
-       .share-container {
-           margin: 30px 0;
+       .share-section {
+           width: 100%;
            text-align: center;
-           position: static !important;
+           margin: 20px 0;
            display: block !important;
-           opacity: 1 !important;
            visibility: visible !important;
-           -webkit-transform: none !important;
-           transform: none !important;
+           opacity: 1 !important;
+           position: static !important;
        }
        
-       .share-trigger {
+       .share-button-container {
+           display: block !important;
+           visibility: visible !important;
+           opacity: 1 !important;
+           position: static !important;
+           transform: none !important;
+           -webkit-transform: none !important;
+       }
+       
+       .share-button {
            -webkit-appearance: none;
            -webkit-tap-highlight-color: transparent;
            background-color: #3498db;
            color: white;
-           padding: 12px 25px;
+           padding: 12px 24px;
            border: none;
            border-radius: 6px;
-           cursor: pointer;
            font-size: 16px;
-           display: -webkit-inline-flex !important;
+           cursor: pointer;
+           display: inline-flex !important;
            align-items: center;
            gap: 8px;
-           position: static !important;
-           margin: 10px auto !important;
-           opacity: 1 !important;
-           visibility: visible !important;
+           margin: 10px auto;
            min-width: 200px;
-           z-index: 1;
        }
 
-       .share-trigger:hover {
+       .share-button:hover {
            background-color: #2980b9;
        }
 
-       .share-trigger i {
+       .share-button i {
            font-size: 18px;
        }
 
-       /* Toast notification for copy feedback */
+       /* Toast notification */
        .toast {
            position: fixed;
            bottom: 20px;
@@ -267,6 +271,7 @@
            color: #2c3e50;
        }
        
+       /* Updated horoscope styles */
        .horoscope-container {
            margin: 30px 0;
            padding: 20px;
@@ -293,27 +298,40 @@
            border-radius: 8px;
            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
        }
+       .horoscope-column.positive {
+           border-left: 4px solid #2ecc71;
+       }
+       .horoscope-column.negative {
+           border-left: 4px solid #e74c3c;
+       }
        .horoscope-title {
-           color: #3498db;
            font-weight: bold;
-           margin-bottom: 10px;
+           margin-bottom: 15px;
            font-size: 1.1em;
        }
-       .horoscope-text {
+       .horoscope-title.positive {
+           color: #27ae60;
+       }
+       .horoscope-title.negative {
+           color: #c0392b;
+       }
+       .horoscope-summary {
+           color: #2c3e50;
+           font-style: italic;
+           margin-bottom: 15px;
+           line-height: 1.4;
+       }
+       .horoscope-traits {
            color: #2c3e50;
            line-height: 1.6;
        }
 
        /* Safari-specific fixes */
        @supports (-webkit-touch-callout: none) {
-           .share-trigger, .share-container {
-               position: static !important;
-               display: -webkit-inline-flex !important;
-               -webkit-transform: none !important;
-               transform: none !important;
-               opacity: 1 !important;
+           .share-button {
+               display: inline-flex !important;
                visibility: visible !important;
-               z-index: 1 !important;
+               opacity: 1 !important;
            }
        }
 
@@ -343,177 +361,401 @@
                font-size: 100px !important;
            }
            
-           .share-trigger {
+           .share-button {
                width: auto !important;
                min-width: 200px !important;
                margin: 10px auto !important;
                display: -webkit-inline-flex !important;
            }
-
-           .share-container {
-               margin: 20px 0 !important;
-               display: block !important;
-           }
        }
    </style>
 </head>
 <body>
-   <div class="header">
-       <h1>Birthday Weather Time Machine</h1>
-       <div class="subtitle">Discover what the weather was like on the day you were born!</div>
-   </div>
-
-   <div class="mode-selector">
-       <button class="mode-button active" data-mode="personal">My Birthday</button>
-       <button class="mode-button" data-mode="friend">Friend's Birthday</button>
-   </div>
-
-   <div class="friend-input-container">
-       <input type="text" id="friendNameInput" placeholder="Enter friend's name">
-   </div>
-   
-   <div class="dob-container">
-       <select id="dobMonth"></select>
-       <select id="dobDay"></select>
-       <select id="dobYear"></select>
-   </div>
-
-   <div class="search-container">
-       <input type="text" id="searchInput" placeholder="Enter birthplace">
-       <button id="getWeather" class="search-button">Get Weather</button>
-   </div>
-   
-   <div class="toggle-container">
-       <span class="temp-label">°F</span>
-       <label class="switch">
-           <input type="checkbox" id="tempToggle">
-           <span class="slider"></span>
-       </label>
-       <span class="temp-label">°C</span>
-   </div>
-
-   <div id="weatherResult"></div>
-   
-   <!-- Toast notification -->
-   <div class="toast" id="toast"></div>
-   
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
-   <script>
-       $(document).ready(function() {
-           let selectedCity = null;
-           let isFahrenheit = true;
-
-           // Toast notification function
-           function showToast(message, duration = 3000) {
-               const toast = $('#toast');
-               toast.text(message).fadeIn();
-               setTimeout(() => toast.fadeOut(), duration);
-           }
-
-           $('.mode-button').click(function() {
-               $('.mode-button').removeClass('active');
-               $(this).addClass('active');
-               const mode = $(this).data('mode');
-               $('#friendNameInput').toggle(mode === 'friend');
-               updatePlaceholders(mode);
-           });
-
-           function updatePlaceholders(mode) {
-               const searchPlaceholder = mode === 'friend' ? "Enter friend's birthplace" : "Enter your birthplace";
-               $('#searchInput').attr('placeholder', searchPlaceholder);
-           }
-
-           var monthSelect = $('#dobMonth');
-           var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-           for (var i = 0; i < 12; i++) {
-               monthSelect.append($('<option></option>').val((i+1).toString().padStart(2, '0')).html(months[i]));
-           }
-
-           var daySelect = $('#dobDay');
-           for (var i = 1; i <= 31; i++) {
-               daySelect.append($('<option></option>').val(i.toString().padStart(2, '0')).html(i));
-           }
-
-           var yearSelect = $('#dobYear');
-           var currentYear = new Date().getFullYear();
-           for (var i = currentYear; i >= 1940; i--) {
-               yearSelect.append($('<option></option>').val(i).html(i));
-           }
-           yearSelect.val(2000);
-
-           function celsiusToFahrenheit(celsius) {
-               return (celsius * 9/5) + 32;
-           }
-
-           function getWeatherIcon(weatherCode) {
-               const weatherIcons = {
-                   0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️',
-                   51: '🌧️', 53: '🌧️', 55: '🌧️', 61: '🌧️', 63: '🌧️', 65: '🌧️',
-                   71: '🌨️', 73: '🌨️', 75: '🌨️', 77: '🌨️', 80: '🌧️', 81: '🌧️',
-                   82: '🌧️', 85: '🌨️', 86: '🌨️', 95: '⛈️', 96: '⛈️', 99: '⛈️'
-               };
-               return weatherIcons[weatherCode] || '❓';
-           }
-
-           function getTemperatureDescription(maxTemp, isFahrenheit) {
-               const temp = isFahrenheit ? maxTemp : celsiusToFahrenheit(maxTemp);
-               if (temp >= 90) return "a scorching hot";
-               if (temp >= 80) return "a very warm";
-               if (temp >= 70) return "a pleasantly warm";
-               if (temp >= 60) return "a mild";
-               if (temp >= 50) return "a cool";
-               if (temp >= 40) return "a chilly";
-               if (temp >= 30) return "a cold";
-               return "a very cold";
-           }
-
-           function getWeatherDescription(weatherCode, maxTemp, minTemp, precipitation, isFahrenheit) {
-               const baseDescriptions = {
-                   0: "clear and sunny day",
-                   1: "mostly clear day",
-                   2: "partly cloudy day",
-                   3: "overcast day",
-                   45: "foggy day",
-                   48: "foggy day with frost",
-                   51: "day with light drizzle",
-                   53: "day with moderate drizzle",
-                   55: "day with heavy drizzle",
-                   61: "day with light rain",
-                   63: "day with moderate rain",
-                   65: "day with heavy rain",
-                   71: "day with light snow",
-                   73: "day with moderate snow",
-                   75: "day with heavy snow",
-                   77: "day with snow grains",
-                   80: "day with light rain showers",
-                   81: "day with moderate rain showers",
-                   82: "day with violent rain showers",
-                   85: "day with light snow showers",
-                   86: "day with heavy snow showers",
-                   95: "stormy day",
-                   96: "stormy day with light hail",
-                   99: "stormy day with heavy hail"
-               };
-
-               const tempDesc = getTemperatureDescription(maxTemp, isFahrenheit);
-               const weatherDesc = baseDescriptions[weatherCode] || "day";
-               
-               let extraDetail = "";
-               if (precipitation > 0) {
-                   extraDetail = ` with ${precipitation}mm of precipitation`;
-               }
-
-               return `${tempDesc} ${weatherDesc}${extraDetail}`;
-           }
-
-           function formatDate(year, month, day) {
-               const date = new Date(year, month - 1, day);
-               return date.toLocaleDateString('en-US', { 
-                   month: 'long',
-                   day: 'numeric',
-                   year: 'numeric'
-               });
+    <div class="header">
+        <h1>Birthday Weather Time Machine</h1>
+        <div class="subtitle">Discover what the weather was like on the day you were born!</div>
+    </div>
+ 
+    <div class="mode-selector">
+        <button class="mode-button active" data-mode="personal">My Birthday</button>
+        <button class="mode-button" data-mode="friend">Friend's Birthday</button>
+    </div>
+ 
+    <div class="friend-input-container">
+        <input type="text" id="friendNameInput" placeholder="Enter friend's name">
+    </div>
+    
+    <div class="dob-container">
+        <select id="dobMonth"></select>
+        <select id="dobDay"></select>
+        <select id="dobYear"></select>
+    </div>
+ 
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Enter birthplace">
+        <button id="getWeather" class="search-button">Get Weather</button>
+    </div>
+    
+    <div class="toggle-container">
+        <span class="temp-label">°F</span>
+        <label class="switch">
+            <input type="checkbox" id="tempToggle">
+            <span class="slider"></span>
+        </label>
+        <span class="temp-label">°C</span>
+    </div>
+ 
+    <div id="weatherResult"></div>
+    
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+ 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script>
+        // Enhanced Weather Personality System
+        const weatherPersonality = {
+            // Sunny conditions
+            clear: {
+                positive: {
+                    summary: "You shine bright like the sun on your birthday! Your natural radiance draws people to you.",
+                    traits: [
+                        "Natural leadership qualities",
+                        "Radiates positive energy",
+                        "Brings warmth to relationships"
+                    ]
+                },
+                negative: {
+                    summary: "Your intense energy can sometimes be overwhelming for others.",
+                    traits: [
+                        "Can be too intense at times",
+                        "Might overshadow quieter personalities",
+                        "Sometimes overly optimistic"
+                    ]
+                }
+            },
+            // Rainy conditions
+            rainy: {
+                positive: {
+                    summary: "Like the nurturing rain, you have a deeply caring and refreshing nature.",
+                    traits: [
+                        "Naturally nurturing personality",
+                        "Deep emotional intelligence",
+                        "Brings growth to relationships"
+                    ]
+                },
+                negative: {
+                    summary: "Your emotional depth can sometimes lead to moodiness.",
+                    traits: [
+                        "Can be moody when stressed",
+                        "Tendency to overthink",
+                        "Sometimes too introspective"
+                    ]
+                }
+            },
+            // Cloudy conditions
+            cloudy: {
+                positive: {
+                    summary: "You have a mysterious and thoughtful nature that intrigues others.",
+                    traits: [
+                        "Deep thinker",
+                        "Comfortable with complexity",
+                        "Good at seeing different perspectives"
+                    ]
+                },
+                negative: {
+                    summary: "You might sometimes get lost in your thoughts.",
+                    traits: [
+                        "Can be hard to read",
+                        "Sometimes too reserved",
+                        "May appear distant"
+                    ]
+                }
+            },
+            // Stormy conditions
+            stormy: {
+                positive: {
+                    summary: "You have a powerful and dynamic personality that can move mountains!",
+                    traits: [
+                        "Passionate and driven",
+                        "Powerful presence",
+                        "Natural agent of change"
+                    ]
+                },
+                negative: {
+                    summary: "Your intensity can sometimes create turbulence.",
+                    traits: [
+                        "Can be temperamental",
+                        "Might overwhelm others",
+                        "Sometimes too forceful"
+                    ]
+                }
+            },
+            // Snowy conditions
+            snowy: {
+                positive: {
+                    summary: "You have a pure and peaceful nature that brings tranquility to others.",
+                    traits: [
+                        "Calming presence",
+                        "Pure intentions",
+                        "Brings serenity to chaos"
+                    ]
+                },
+                negative: {
+                    summary: "Your cool nature might sometimes feel distant.",
+                    traits: [
+                        "Can appear cold",
+                        "Sometimes too reserved",
+                        "May seem unapproachable"
+                    ]
+                }
+            },
+            // Hot temperature
+            hot: {
+                positive: {
+                    summary: "Your passion and energy are contagious!",
+                    traits: [
+                        "Naturally enthusiastic",
+                        "High energy levels",
+                        "Motivates others"
+                    ]
+                },
+                negative: {
+                    summary: "Your fiery nature needs careful management.",
+                    traits: [
+                        "Can be too heated",
+                        "Might burn out easily",
+                        "Sometimes impulsive"
+                    ]
+                }
+            },
+            // Cold temperature
+            cold: {
+                positive: {
+                    summary: "You have a cool, collected nature that helps you make great decisions.",
+                    traits: [
+                        "Level-headed thinker",
+                        "Great under pressure",
+                        "Naturally composed"
+                    ]
+                },
+                negative: {
+                    summary: "Your cool demeanor might create distance.",
+                    traits: [
+                        "Can seem aloof",
+                        "Might appear unfriendly",
+                        "Sometimes too detached"
+                    ]
+                }
+            }
+        };
+ 
+        function determineWeatherType(weatherCode, temperature, precipitation) {
+            // Weather code mapping
+            if (weatherCode === 0 || weatherCode === 1) return 'clear';
+            if ([61, 63, 65, 80, 81, 82].includes(weatherCode)) return 'rainy';
+            if ([2, 3].includes(weatherCode)) return 'cloudy';
+            if ([95, 96, 99].includes(weatherCode)) return 'stormy';
+            if ([71, 73, 75, 77, 85, 86].includes(weatherCode)) return 'snowy';
+            
+            // Temperature-based mapping (if no specific weather condition)
+            if (temperature > 30) return 'hot';
+            if (temperature < 10) return 'cold';
+            
+            // Default to clear if no specific condition matches
+            return 'clear';
+        }
+ 
+        function generateWeatherHoroscope(weatherCode, temperature, precipitation) {
+            const weatherType = determineWeatherType(weatherCode, temperature, precipitation);
+            return weatherPersonality[weatherType];
+        }
+ 
+        $(document).ready(function() {
+            let selectedCity = null;
+            let isFahrenheit = true;
+ 
+            // Toast notification function
+            function showToast(message, duration = 3000) {
+                const toast = $('#toast');
+                toast.text(message).fadeIn();
+                setTimeout(() => toast.fadeOut(), duration);
+            }
+ 
+            $('.mode-button').click(function() {
+                $('.mode-button').removeClass('active');
+                $(this).addClass('active');
+                const mode = $(this).data('mode');
+                $('#friendNameInput').toggle(mode === 'friend');
+                updatePlaceholders(mode);
+            });
+ 
+            function updatePlaceholders(mode) {
+                const searchPlaceholder = mode === 'friend' ? "Enter friend's birthplace" : "Enter your birthplace";
+                $('#searchInput').attr('placeholder', searchPlaceholder);
+            }
+ 
+            var monthSelect = $('#dobMonth');
+            var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            for (var i = 0; i < 12; i++) {
+                monthSelect.append($('<option></option>').val((i+1).toString().padStart(2, '0')).html(months[i]));
+            }
+ 
+            var daySelect = $('#dobDay');
+            for (var i = 1; i <= 31; i++) {
+                daySelect.append($('<option></option>').val(i.toString().padStart(2, '0')).html(i));
+            }
+ 
+            var yearSelect = $('#dobYear');
+            var currentYear = new Date().getFullYear();
+            for (var i = currentYear; i >= 1940; i--) {
+                yearSelect.append($('<option></option>').val(i).html(i));
+            }
+            yearSelect.val(2000);
+ 
+            function celsiusToFahrenheit(celsius) {
+                return (celsius * 9/5) + 32;
+            }
+ 
+            // Weather icon mapping
+            function getWeatherIcon(weatherCode) {
+                const weatherIcons = {
+                    0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️',
+                    51: '🌧️', 53: '🌧️', 55: '🌧️', 61: '🌧️', 63: '🌧️', 65: '🌧️',
+                    71: '🌨️', 73: '🌨️', 75: '🌨️', 77: '🌨️', 80: '🌧️', 81: '🌧️',
+                    82: '🌧️', 85: '🌨️', 86: '🌨️', 95: '⛈️', 96: '⛈️', 99: '⛈️'
+                };
+                return weatherIcons[weatherCode] || '❓';
+            }
+ 
+            function getTemperatureDescription(maxTemp, isFahrenheit) {
+                const temp = isFahrenheit ? maxTemp : celsiusToFahrenheit(maxTemp);
+                if (temp >= 90) return "a scorching hot";
+                if (temp >= 80) return "a very warm";
+                if (temp >= 70) return "a pleasantly warm";
+                if (temp >= 60) return "a mild";
+                if (temp >= 50) return "a cool";
+                if (temp >= 40) return "a chilly";
+                if (temp >= 30) return "a cold";
+                return "a very cold";
+            }
+ 
+            function getWeatherDescription(weatherCode, maxTemp, minTemp, precipitation, isFahrenheit) {
+                const baseDescriptions = {
+                    0: "clear and sunny day",
+                    1: "mostly clear day",
+                    2: "partly cloudy day",
+                    3: "overcast day",
+                    45: "foggy day",
+                    48: "foggy day with frost",
+                    51: "day with light drizzle",
+                    53: "day with moderate drizzle",
+                    55: "day with heavy drizzle",
+                    61: "day with light rain",
+                    63: "day with moderate rain",
+                    65: "day with heavy rain",
+                    71: "day with light snow",
+                    73: "day with moderate snow",
+                    75: "day with heavy snow",
+                    77: "day with snow grains",
+                    80: "day with light rain showers",
+                    81: "day with moderate rain showers",
+                    82: "day with violent rain showers",
+                    85: "day with light snow showers",
+                    86: "day with heavy snow showers",
+                    95: "stormy day",
+                    96: "stormy day with light hail",
+                    99: "stormy day with heavy hail"
+                };
+ 
+                const tempDesc = getTemperatureDescription(maxTemp, isFahrenheit);
+                const weatherDesc = baseDescriptions[weatherCode] || "day";
+                
+                let extraDetail = "";
+                if (precipitation > 0) {
+                    extraDetail = ` with ${precipitation}mm of precipitation`;
+                }
+ 
+                return `${tempDesc} ${weatherDesc}${extraDetail}`;
+            }
+ 
+            function formatDate(year, month, day) {
+                const date = new Date(year, month - 1, day);
+                return date.toLocaleDateString('en-US', { 
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+            }
+ 
+            function generateShareMessage(mode, data) {
+                const websiteURL = 'www.birthdayweathertimemachine.com';
+                if (mode === 'friend') {
+                    return `🎂 Happy Birthday! On your birthday in ${data.city} on ${data.date}, it was ${data.weatherDesc}! Discover your own birthday weather at ${websiteURL}`;
+                } else {
+                    return `🌤️ Check out my birthday weather at ${websiteURL}! On ${data.date} in ${data.city}, it was ${data.weatherDesc}!`;
+                }
+            }
+ 
+            async function shareResults(mode, data) {
+                const messageText = generateShareMessage(mode, data);
+                
+                try {
+                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                    
+                    if (navigator.share && !(isIOS && isSafari)) {
+                        await navigator.share({
+                            title: 'Birthday Weather Time Machine',
+                            text: messageText,
+                            url: websiteURL
+                        });
+                        gtag('event', 'share', { 'method': 'native_share' });
+                    } else {
+                        await navigator.clipboard.writeText(messageText);
+                        showToast('Results copied to clipboard! 📋');
+                        gtag('event', 'share', { 'method': 'clipboard' });
+                    }
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error('Share error:', err);
+                        try {
+                            await navigator.clipboard.writeText(messageText);
+                            showToast('Results copied to clipboard! 📋');
+                            gtag('event', 'share', { 'method': 'clipboard_fallback' });
+                        } catch (clipboardErr) {
+                            console.error('Clipboard error:', clipboardErr);
+                            showToast('Unable to share results 😢');
+                            gtag('event', 'share_error', { 'error_type': 'all_methods_failed' });
+                        }
+                    }
+                }
+            }
+ 
+            function generateHoroscopeDisplay(horoscope) {
+                return `
+                    <div class="horoscope-container">
+                        <div class="horoscope-header">
+                            Your Birthday Weather Personality
+                        </div>
+                        <div class="horoscope-grid">
+                            <div class="horoscope-column positive">
+                                <div class="horoscope-title positive">Your Strengths</div>
+                                <div class="horoscope-summary">${horoscope.positive.summary}</div>
+                                <div class="horoscope-traits">
+                                    ${horoscope.positive.traits.map(trait => `• ${trait}`).join('<br>')}
+                                </div>
+                            </div>
+                            <div class="horoscope-column negative">
+                                <div class="horoscope-title negative">Your Challenges</div>
+                                <div class="horoscope-summary">${horoscope.negative.summary}</div>
+                                <div class="horoscope-traits">
+                                    ${horoscope.negative.traits.map(trait => `• ${trait}`).join('<br>')}
+                                </div>
+                            </div>
+                        </div
+                   </div>
+               `;
            }
 
            $("#searchInput").autocomplete({
@@ -559,64 +801,6 @@
                $('#getWeather').toggle(day && month && year && hasCity && hasFriendName);
            }
 
-           async function shareResults(messageText, horoscopeText) {
-               const fullMessage = `${decodeURIComponent(messageText)}\n\n🌟 Weather Horoscope:\n${decodeURIComponent(horoscopeText)}`;
-               
-               try {
-                   // Check if running on iOS Safari
-                   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-                   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-                   
-                   if (navigator.share && !(isIOS && isSafari)) {
-                       // Use native sharing for non-Safari browsers
-                       await navigator.share({
-                           title: 'Birthday Weather Time Machine',
-                           text: fullMessage
-                       });
-                       gtag('event', 'share', { 'method': 'native_share' });
-                   } else {
-                       // Fallback for Safari: Copy to clipboard
-                       await navigator.clipboard.writeText(fullMessage);
-                       showToast('Results copied to clipboard! 📋');
-                       gtag('event', 'share', { 'method': 'clipboard' });
-                   }
-               } catch (err) {
-                   if (err.name !== 'AbortError') {
-                       console.error('Share error:', err);
-                       // Fallback to clipboard on error
-                       try {
-                           await navigator.clipboard.writeText(fullMessage);
-                           showToast('Results copied to clipboard! 📋');
-                           gtag('event', 'share', { 'method': 'clipboard_fallback' });
-                       } catch (clipboardErr) {
-                           console.error('Clipboard error:', clipboardErr);
-                           showToast('Unable to share results 😢');
-                           gtag('event', 'share_error', { 'error_type': 'all_methods_failed' });
-                       }
-                   }
-               }
-           }
-
-           function generateHoroscopeDisplay(horoscope) {
-               return `
-                   <div class="horoscope-container">
-                       <div class="horoscope-header">
-                           Based on the weather conditions when you were born...
-                       </div>
-                       <div class="horoscope-grid">
-                           <div class="horoscope-column">
-                               <div class="horoscope-title">Your Weather Energy</div>
-                               <div class="horoscope-text">${horoscope.weather_summary}</div>
-                           </div>
-                           <div class="horoscope-column">
-                               <div class="horoscope-title">Your Natural Traits</div>
-                               <div class="horoscope-text">${horoscope.personality_traits.join('<br>')}</div>
-                           </div>
-                       </div>
-                   </div>
-               `;
-           }
-
            function checkWeather() {
                if (!selectedCity) return;
                
@@ -655,31 +839,44 @@
                                isFahrenheit
                            );
 
-                           let title, messageText;
+                           let title;
                            if (isFriendMode) {
                                title = `Happy Birthday, ${friendName}!`;
-                               messageText = `On ${formattedDate} in ${selectedCity.city}, it was ${weatherDesc}!`;
                            } else {
                                title = `On ${formattedDate} in ${selectedCity.city}`;
-                               messageText = `It was ${weatherDesc}!`;
                            }
 
-                           const horoscopeHtml = generateHoroscopeDisplay(data.horoscope);
+                           // Generate horoscope based on weather conditions
+                           const horoscope = generateWeatherHoroscope(
+                               data.daily.weathercode[0],
+                               data.daily.temperature_2m_max[0],
+                               data.daily.precipitation_sum[0]
+                           );
+
+                           const shareData = {
+                               date: formattedDate,
+                               city: selectedCity.city,
+                               weatherDesc: weatherDesc
+                           };
+
+                           const mode = isFriendMode ? 'friend' : 'personal';
 
                            $('#weatherResult').html(`
                                <h3 class="birthday-message">${title}</h3>
                                <div class="weather-icon">${weatherIcon}</div>
-                               <div class="weather-description">${messageText}</div>
+                               <div class="weather-description">It was ${weatherDesc}!</div>
                                <div class="temp-info">
                                    <p>High Temperature: ${maxTemp}${unit}</p>
                                    <p>Low Temperature: ${minTemp}${unit}</p>
                                    <p>Precipitation: ${data.daily.precipitation_sum[0]} mm</p>
                                </div>
-                               ${horoscopeHtml}
-                               <div class="share-container">
-                                   <button class="share-trigger" onclick="shareResults('${encodeURIComponent(messageText)}', '${encodeURIComponent(data.horoscope.weather_summary)}')">
-                                       <i class="fas fa-share-alt"></i> Share Results
-                                   </button>
+                               ${generateHoroscopeDisplay(horoscope)}
+                               <div class="share-section">
+                                   <div class="share-button-container">
+                                       <button class="share-button" onclick='shareResults("${mode}", ${JSON.stringify(shareData)})'>
+                                           <i class="fas fa-share-alt"></i> Share Results
+                                       </button>
+                                   </div>
                                </div>
                            `);
 
