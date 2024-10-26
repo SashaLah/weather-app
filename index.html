@@ -176,15 +176,21 @@
            margin: 10px 0;
        }
 
-       /* Updated share button styles */
+       /* Updated share button styles with Safari fixes */
        .share-container {
            margin: 30px 0;
            text-align: center;
-           position: relative;
-           z-index: 9999;
+           position: static !important;
+           display: block !important;
+           opacity: 1 !important;
+           visibility: visible !important;
+           -webkit-transform: none !important;
+           transform: none !important;
        }
        
        .share-trigger {
+           -webkit-appearance: none;
+           -webkit-tap-highlight-color: transparent;
            background-color: #3498db;
            color: white;
            padding: 12px 25px;
@@ -192,22 +198,19 @@
            border-radius: 6px;
            cursor: pointer;
            font-size: 16px;
-           display: inline-flex;
+           display: -webkit-inline-flex !important;
            align-items: center;
            gap: 8px;
-           -webkit-appearance: none;
-           position: relative;
-           z-index: 9999;
-           transition: background-color 0.3s, transform 0.2s;
+           position: static !important;
+           margin: 10px auto !important;
+           opacity: 1 !important;
+           visibility: visible !important;
+           min-width: 200px;
+           z-index: 1;
        }
 
        .share-trigger:hover {
            background-color: #2980b9;
-           transform: translateY(-1px);
-       }
-
-       .share-trigger:active {
-           transform: translateY(1px);
        }
 
        .share-trigger i {
@@ -303,26 +306,14 @@
 
        /* Safari-specific fixes */
        @supports (-webkit-touch-callout: none) {
-           .share-trigger {
-               display: -webkit-box !important;
+           .share-trigger, .share-container {
+               position: static !important;
                display: -webkit-inline-flex !important;
-               -webkit-appearance: button;
-               -webkit-tap-highlight-color: transparent;
-               position: relative !important;
-               z-index: 9999 !important;
+               -webkit-transform: none !important;
+               transform: none !important;
                opacity: 1 !important;
                visibility: visible !important;
-               transform: none !important;
-               margin: 10px auto !important;
-           }
-           
-           .share-container {
-               display: block !important;
-               position: relative !important;
-               z-index: 9999 !important;
-               opacity: 1 !important;
-               visibility: visible !important;
-               transform: none !important;
+               z-index: 1 !important;
            }
        }
 
@@ -357,18 +348,13 @@
                min-width: 200px !important;
                margin: 10px auto !important;
                display: -webkit-inline-flex !important;
-               position: relative !important;
-               z-index: 9999 !important;
            }
 
            .share-container {
                margin: 20px 0 !important;
                display: block !important;
-               position: relative !important;
-               z-index: 9999 !important;
            }
        }
-
    </style>
 </head>
 <body>
@@ -410,6 +396,7 @@
    
    <!-- Toast notification -->
    <div class="toast" id="toast"></div>
+   
    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
    <script>
@@ -573,27 +560,39 @@
            }
 
            async function shareResults(messageText, horoscopeText) {
-               const fullMessage = `${messageText}\n\n🌟 Weather Horoscope:\n${horoscopeText}`;
-
+               const fullMessage = `${decodeURIComponent(messageText)}\n\n🌟 Weather Horoscope:\n${decodeURIComponent(horoscopeText)}`;
+               
                try {
-                   // Try native sharing first
-                   if (navigator.share) {
+                   // Check if running on iOS Safari
+                   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                   
+                   if (navigator.share && !(isIOS && isSafari)) {
+                       // Use native sharing for non-Safari browsers
                        await navigator.share({
                            title: 'Birthday Weather Time Machine',
                            text: fullMessage
                        });
                        gtag('event', 'share', { 'method': 'native_share' });
                    } else {
-                       // Fallback to clipboard
+                       // Fallback for Safari: Copy to clipboard
                        await navigator.clipboard.writeText(fullMessage);
                        showToast('Results copied to clipboard! 📋');
                        gtag('event', 'share', { 'method': 'clipboard' });
                    }
                } catch (err) {
                    if (err.name !== 'AbortError') {
-                       console.error('Error sharing:', err);
-                       showToast('Unable to share results 😢');
-                       gtag('event', 'share_error', { 'error_type': err.name });
+                       console.error('Share error:', err);
+                       // Fallback to clipboard on error
+                       try {
+                           await navigator.clipboard.writeText(fullMessage);
+                           showToast('Results copied to clipboard! 📋');
+                           gtag('event', 'share', { 'method': 'clipboard_fallback' });
+                       } catch (clipboardErr) {
+                           console.error('Clipboard error:', clipboardErr);
+                           showToast('Unable to share results 😢');
+                           gtag('event', 'share_error', { 'error_type': 'all_methods_failed' });
+                       }
                    }
                }
            }
@@ -678,7 +677,7 @@
                                </div>
                                ${horoscopeHtml}
                                <div class="share-container">
-                                   <button class="share-trigger" onclick="shareResults('${messageText}', '${data.horoscope.weather_summary}')">
+                                   <button class="share-trigger" onclick="shareResults('${encodeURIComponent(messageText)}', '${encodeURIComponent(data.horoscope.weather_summary)}')">
                                        <i class="fas fa-share-alt"></i> Share Results
                                    </button>
                                </div>
@@ -720,42 +719,6 @@
                }, 0);
            });
        });
-
-       function shareResults(messageText, horoscopeText) {
-           const fullMessage = `${decodeURIComponent(messageText)}\n\n🌟 Weather Horoscope:\n${decodeURIComponent(horoscopeText)}`;
-           try {
-               if (navigator.share) {
-                   navigator.share({
-                       title: 'Birthday Weather Time Machine',
-                       text: fullMessage
-                   }).catch(err => {
-                       if (err.name !== 'AbortError') {
-                           console.error('Error sharing:', err);
-                           showToast('Unable to share results 😢');
-                       }
-                   });
-               } else {
-                   navigator.clipboard.writeText(fullMessage).then(() => {
-                       showToast('Results copied to clipboard! 📋');
-                   }).catch(err => {
-                       console.error('Failed to copy:', err);
-                       showToast('Unable to copy results 😢');
-                   });
-               }
-           } catch (err) {
-               console.error('Share failed:', err);
-               showToast('Unable to share results 😢');
-           }
-       }
-
-       function showToast(message, duration = 3000) {
-           const toast = document.getElementById('toast');
-           toast.textContent = message;
-           toast.style.display = 'block';
-           setTimeout(() => {
-               toast.style.display = 'none';
-           }, duration);
-       }
    </script>
 </body>
 </html>
