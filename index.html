@@ -214,31 +214,6 @@
            border-left: 4px solid #e74c3c;
        }
 
-       #shareContainer {
-           margin: 20px 0;
-           text-align: center;
-       }
-
-       #nativeShareBtn, #copyBtn {
-           -webkit-appearance: none !important;
-           background-color: #3498db;
-           color: white;
-           border: none;
-           border-radius: 6px;
-           padding: 12px 24px;
-           margin: 5px;
-           font-size: 16px;
-           cursor: pointer;
-           display: inline-block !important;
-           visibility: visible !important;
-           opacity: 1 !important;
-           min-width: 200px;
-       }
-
-       .ios-safari #nativeShareBtn {
-           display: none !important;
-       }
-
        .weather-description {
            font-size: 1.2em;
            margin: 20px 0;
@@ -261,7 +236,6 @@
            color: #2c3e50;
        }
 
-       /* Toast notification */
        .toast {
            position: fixed;
            bottom: 20px;
@@ -278,6 +252,32 @@
            animation: fadeInUp 0.3s ease;
        }
 
+       .share-button {
+           background-color: #3498db;
+           color: white;
+           border: none;
+           border-radius: 6px;
+           padding: 12px 24px;
+           margin: 5px;
+           font-size: 16px;
+           cursor: pointer;
+           display: inline-block;
+           min-width: 200px;
+           transition: background-color 0.3s;
+       }
+
+       .share-button:hover {
+           background-color: #2980b9;
+       }
+
+       #twitterBtn {
+           background-color: #1DA1F2;
+       }
+
+       #twitterBtn:hover {
+           background-color: #1a89d0;
+       }
+
        @keyframes fadeInUp {
            from {
                opacity: 0;
@@ -289,7 +289,6 @@
            }
        }
 
-       /* Mobile-specific styles */
        @media (max-width: 768px) {
            body {
                padding: 10px;
@@ -315,10 +314,9 @@
                font-size: 100px !important;
            }
            
-           #nativeShareBtn, #copyBtn {
-               width: auto !important;
-               min-width: 200px !important;
-               margin: 10px auto !important;
+           .share-button {
+               width: 90%;
+               margin: 5px auto;
            }
        }
    </style>
@@ -360,17 +358,15 @@
 
     <div id="weatherResult"></div>
     
-    <!-- Static share buttons container -->
     <div id="shareContainer" style="display: none">
-        <button id="nativeShareBtn">
+        <button id="shareBtn" class="share-button">
             <i class="fas fa-share-alt"></i> Share
         </button>
-        <button id="copyBtn">
-            <i class="fas fa-copy"></i> Copy to Clipboard
+        <button id="twitterBtn" class="share-button">
+            <i class="fab fa-twitter"></i> Share on Twitter
         </button>
     </div>
 
-    <!-- Toast notification -->
     <div class="toast" id="toast"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
@@ -378,35 +374,34 @@
     <script>
         const websiteURL = 'www.birthdayweathertimemachine.com';
         
-        // New simplified weather personality system
         const weatherPersonality = {
             scorchingHot: {
-                bright: "Born on a scorching day - you're naturally energetic and direct",
-                shadow: "That heat shows in your temper - you go from zero to boiling instantly"
+                bright: "You were born on a super hot day - you're full of energy and love being active",
+                shadow: "Sometimes you can get a bit too heated up when things don't go your way"
             },
             sunny: {
-                bright: "Your sunny birth day gave you natural warmth and confidence",
-                shadow: "Sometimes you're too bright for others to handle"
+                bright: "Born on a sunny day - you bring light and warmth to others",
+                shadow: "Just like the sun, you sometimes shine too bright for others"
             },
             rainy: {
-                bright: "Your rainy birth day gave you natural depth and perspective",
-                shadow: "Like the rain that day, your moods can pour without warning"
+                bright: "Born on a rainy day - you're thoughtful and care deeply about others",
+                shadow: "Like the rain, your emotions can overflow at times"
             },
             stormy: {
-                bright: "Born in a storm - you've got raw power and intensity",
-                shadow: "Your dramatic nature creates hurricanes from gentle breezes"
+                bright: "Your stormy birthday shows you're strong and passionate",
+                shadow: "Your strong personality can sometimes stir up drama"
             },
             cloudy: {
-                bright: "Your cloudy birth day gave you thoughtful mystery",
-                shadow: "You can be as unpredictable as the clouds above"
+                bright: "Born under cloudy skies - you're creative and great at solving problems",
+                shadow: "Like clouds, your mood can change quickly"
             },
             snowy: {
-                bright: "Born on a snowy day - you bring peace and quiet beauty",
-                shadow: "Like snow, you can be cold and distant when stressed"
+                bright: "Born on a snowy day - you're calm and bring peace to others",
+                shadow: "Sometimes you can be a bit distant, like a snowy day"
             },
             cold: {
-                bright: "Born on a freezing day - you keep cool when others panic",
-                shadow: "Your cool nature can leave others feeling frosty"
+                bright: "Born on a cold day - you stay cool under pressure",
+                shadow: "You might come across as a bit chilly when stressed"
             }
         };
 
@@ -445,19 +440,12 @@
         }
 
         $(document).ready(function() {
-            // Check for iOS Safari
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-            if (isIOS && isSafari) {
-                document.body.classList.add('ios-safari');
-            }
-
             let selectedCity = null;
             let isFahrenheit = true;
 
             function showToast(message, duration = 3000) {
                 const toast = $('#toast');
+                toast.text
                 toast.text(message).fadeIn();
                 setTimeout(() => toast.fadeOut(), duration);
             }
@@ -577,8 +565,8 @@
 
             function setupSharing(shareData) {
                 const shareContainer = document.getElementById('shareContainer');
-                const nativeShareBtn = document.getElementById('nativeShareBtn');
-                const copyBtn = document.getElementById('copyBtn');
+                const shareBtn = document.getElementById('shareBtn');
+                const twitterBtn = document.getElementById('twitterBtn');
                 
                 shareContainer.style.display = 'block';
                 
@@ -587,31 +575,48 @@
                     city: shareData.city,
                     weatherDesc: shareData.weatherDesc
                 });
-                
-                nativeShareBtn.onclick = async () => {
-                    try {
-                        await navigator.share({
-                            title: 'Birthday Weather Time Machine',
-                            text: shareText,
-                            url: websiteURL
-                        });
-                        gtag('event', 'share', { 'method': 'native_share' });
-                    } catch (err) {
-                        if (err.name !== 'AbortError') {
-                            copyBtn.click();
+
+                // Universal share button
+                shareBtn.onclick = async () => {
+                    if (navigator.share) {
+                        try {
+                            await navigator.share({
+                                title: 'Birthday Weather Time Machine',
+                                text: shareText,
+                                url: websiteURL
+                            });
+                            gtag('event', 'share', { 'method': 'native_share' });
+                        } catch (err) {
+                            if (err.name !== 'AbortError') {
+                                // Fallback to clipboard
+                                try {
+                                    await navigator.clipboard.writeText(shareText);
+                                    showToast('Copied to clipboard! 📋');
+                                    gtag('event', 'share', { 'method': 'clipboard' });
+                                } catch (clipErr) {
+                                    showToast('Unable to share 😢');
+                                    gtag('event', 'share_error', { 'error_type': 'share_failed' });
+                                }
+                            }
+                        }
+                    } else {
+                        // Fallback for browsers without share API
+                        try {
+                            await navigator.clipboard.writeText(shareText);
+                            showToast('Copied to clipboard! 📋');
+                            gtag('event', 'share', { 'method': 'clipboard' });
+                        } catch (err) {
+                            showToast('Unable to share 😢');
+                            gtag('event', 'share_error', { 'error_type': 'share_failed' });
                         }
                     }
                 };
-                
-                copyBtn.onclick = async () => {
-                    try {
-                        await navigator.clipboard.writeText(shareText);
-                        showToast('Copied to clipboard! 📋');
-                        gtag('event', 'share', { 'method': 'clipboard' });
-                    } catch (err) {
-                        showToast('Unable to copy results 😢');
-                        gtag('event', 'share_error', { 'error_type': 'clipboard_failed' });
-                    }
+
+                // Twitter share button
+                twitterBtn.onclick = () => {
+                    const twitterText = encodeURIComponent(shareText);
+                    window.open(`https://twitter.com/intent/tweet?text=${twitterText}`, '_blank');
+                    gtag('event', 'share', { 'method': 'twitter' });
                 };
             }
 
