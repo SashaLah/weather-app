@@ -1,392 +1,325 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="format-detection" content="telephone=no">
-    <title>Birthday Weather</title>
-    <!-- Google Analytics (GA4) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-38RTREJJ2S"></script>
-    <script>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+   <meta name="apple-mobile-web-app-capable" content="yes">
+   <meta name="apple-mobile-web-app-status-bar-style" content="default">
+   <meta name="format-detection" content="telephone=no">
+   <title>Birthday Weather</title>
+   <!-- Google Analytics (GA4) -->
+   <script async src="https://www.googletagmanager.com/gtag/js?id=G-38RTREJJ2S"></script>
+   <script>
      window.dataLayer = window.dataLayer || [];
      function gtag(){dataLayer.push(arguments);}
      gtag('js', new Date());
 
      gtag('config', 'G-38RTREJJ2S');
-    </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        /* All existing styles remain exactly the same */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f8f9fa;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        .header {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 30px;
-        }
-        .subtitle {
-            color: #666;
-            text-align: center;
-            margin-bottom: 25px;
-            font-size: 1.1em;
-        }
-        #searchInput, select {
-            width: 200px;
-            padding: 12px;
-            font-size: 16px;
-            margin-right: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            -webkit-appearance: none;
-        }
-        #weatherResult {
-            margin-top: 20px;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background-color: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        .dob-container {
-            display: flex;
-            margin-top: 20px;
-            margin-bottom: 20px;
-            justify-content: center;
-            gap: 15px;
-        }
-        .search-container {
-            text-align: center;
-            margin: 20px 0;
-        }
-        .search-button {
-            padding: 12px 25px;
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-top: 20px;
-            font-size: 16px;
-            transition: background-color 0.3s;
-            display: none;
-            -webkit-appearance: none;
-        }
-        .search-button:hover {
-            background-color: #2980b9;
-        }
-        .error-message {
-            color: #e74c3c;
-            margin-top: 10px;
-        }
-        .toggle-container {
-            margin: 20px 0;
-            text-align: center;
-        }
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-            margin: 0 10px;
-        }
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #3498db;
-            transition: .4s;
-            border-radius: 34px;
-        }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        input:checked + .slider {
-            background-color: #2ecc71;
-        }
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-        .temp-label {
-            display: inline-block;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        .weather-icon {
-            font-size: 120px !important;
-            text-align: center;
-            margin: 30px 0;
-            line-height: 1;
-            display: block;
-        }
-        .mode-selector {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .mode-button {
-            padding: 10px 20px;
-            margin: 0 10px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            background-color: #ecf0f1;
-            -webkit-appearance: none;
-        }
-        .mode-button.active {
-            background-color: #3498db;
-            color: white;
-        }
-        #friendNameInput {
-            display: none;
-            width: 200px;
-            padding: 12px;
-            margin: 10px auto;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            text-align: center;
-            -webkit-appearance: none;
-        }
-        .friend-input-container {
-            text-align: center;
-            margin: 10px 0;
-        }
-        .horoscope-container {
-            margin: 30px 0;
-            padding: 25px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        .horoscope-header {
-            text-align: center;
-            font-size: 1.2em;
-            color: #2c3e50;
-            margin-bottom: 20px;
-            font-weight: 500;
-        }
-        .trait-cards {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .trait-card {
-            padding: 20px;
-            border-radius: 8px;
-            background: #f8f9fa;
-            font-size: 1.1em;
-            line-height: 1.4;
-        }
-        .trait-card.sunny {
-            border-left: 4px solid #f1c40f;
-        }
-        .trait-card.stormy {
-            border-left: 4px solid #e74c3c;
-        }
-        .weather-description {
-            font-size: 1.2em;
-            margin: 20px 0;
-            text-align: center;
-            color: #2c3e50;
-            line-height: 1.6;
-            padding: 0 10px;
-        }
-        .birthday-message {
-            font-size: 1.5em;
-            margin: 15px 0;
-            text-align: center;
-            color: #2c3e50;
-            line-height: 1.6;
-            font-weight: bold;
-        }
-        .temp-info {
-            margin: 15px 0;
-            font-size: 1.1em;
-            color: #2c3e50;
-        }
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #2ecc71;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-size: 16px;
-            display: none;
-            z-index: 10000;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            animation: fadeInUp 0.3s ease;
-        }
-        .share-button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 12px 24px;
-            margin: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            display: inline-block;
-            min-width: 200px;
-            transition: background-color 0.3s;
-        }
-        .share-button:hover {
-            background-color: #2980b9;
-        }
-        #twitterBtn {
-            background-color: #1DA1F2;
-        }
-        #twitterBtn:hover {
-            background-color: #1a89d0;
-        }
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translate(-50%, 20px);
-            }
-            to {
-                opacity: 1;
-                transform: translate(-50%, 0);
-            }
-        }
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            .dob-container {
-                flex-direction: column;
-                align-items: center;
-                gap: 10px;
-            }
-            #searchInput, select {
-                width: 100%;
-                max-width: 300px;
-                margin: 5px 0;
-            }
-            .trait-card {
-                padding: 12px;
-            }
-            .weather-icon {
-                font-size: 100px !important;
-            }
-            .share-button {
-                width: 90%;
-                margin: 5px auto;
-            }
-        }
+   </script>
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+   <style>
+       body {
+           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+           max-width: 800px;
+           margin: 0 auto;
+           padding: 20px;
+           background-color: #f8f9fa;
+           -webkit-font-smoothing: antialiased;
+           -moz-osx-font-smoothing: grayscale;
+       }
+       .header {
+           text-align: center;
+           color: #2c3e50;
+           margin-bottom: 30px;
+       }
+       .subtitle {
+           color: #666;
+           text-align: center;
+           margin-bottom: 25px;
+           font-size: 1.1em;
+       }
+       #searchInput, select {
+           width: 200px;
+           padding: 12px;
+           font-size: 16px;
+           margin-right: 10px;
+           border: 1px solid #ddd;
+           border-radius: 6px;
+           -webkit-appearance: none;
+       }
+       #weatherResult {
+           margin-top: 20px;
+           padding: 20px;
+           border: 1px solid #ddd;
+           border-radius: 8px;
+           background-color: white;
+           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+           text-align: center;
+       }
+       .dob-container {
+           display: flex;
+           margin-top: 20px;
+           margin-bottom: 20px;
+           justify-content: center;
+           gap: 15px;
+       }
+       .search-container {
+           text-align: center;
+           margin: 20px 0;
+       }
+       .search-button {
+           padding: 12px 25px;
+           background-color: #3498db;
+           color: white;
+           border: none;
+           border-radius: 6px;
+           cursor: pointer;
+           margin-top: 20px;
+           font-size: 16px;
+           transition: background-color 0.3s;
+           display: none;
+           -webkit-appearance: none;
+       }
+       .search-button:hover {
+           background-color: #2980b9;
+       }
+       .error-message {
+           color: #e74c3c;
+           margin-top: 10px;
+       }
+       .toggle-container {
+           margin: 20px 0;
+           text-align: center;
+       }
+       .switch {
+           position: relative;
+           display: inline-block;
+           width: 60px;
+           height: 34px;
+           margin: 0 10px;
+       }
+       .switch input {
+           opacity: 0;
+           width: 0;
+           height: 0;
+       }
+       .slider {
+           position: absolute;
+           cursor: pointer;
+           top: 0;
+           left: 0;
+           right: 0;
+           bottom: 0;
+           background-color: #3498db;
+           transition: .4s;
+           border-radius: 34px;
+       }
+       .slider:before {
+           position: absolute;
+           content: "";
+           height: 26px;
+           width: 26px;
+           left: 4px;
+           bottom: 4px;
+           background-color: white;
+           transition: .4s;
+           border-radius: 50%;
+       }
+       input:checked + .slider {
+           background-color: #2ecc71;
+       }
+       input:checked + .slider:before {
+           transform: translateX(26px);
+       }
+       .temp-label {
+           display: inline-block;
+           font-weight: bold;
+           color: #2c3e50;
+       }
+       .weather-icon {
+           font-size: 120px !important;
+           text-align: center;
+           margin: 30px 0;
+           line-height: 1;
+           display: block;
+       }
+       .mode-selector {
+           text-align: center;
+           margin-bottom: 20px;
+       }
+       .mode-button {
+           padding: 10px 20px;
+           margin: 0 10px;
+           cursor: pointer;
+           border: none;
+           border-radius: 5px;
+           background-color: #ecf0f1;
+           -webkit-appearance: none;
+       }
+       .mode-button.active {
+           background-color: #3498db;
+           color: white;
+       }
+       #friendNameInput {
+           display: none;
+           width: 200px;
+           padding: 12px;
+           margin: 10px auto;
+           border: 1px solid #ddd;
+           border-radius: 6px;
+           text-align: center;
+           -webkit-appearance: none;
+       }
+       .friend-input-container {
+           text-align: center;
+           margin: 10px 0;
+       }
 
-        /* New styles for timeline feature */
-        .timeline-container {
-            margin-top: 30px;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .timeline-header {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #2c3e50;
-            font-size: 1.2em;
-            font-weight: 500;
-        }
-        .timeline-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-        .timeline-item {
-            text-align: center;
-            padding: 12px;
-            border-radius: 8px;
-            background: #f8f9fa;
-            transition: transform 0.2s;
-            border: 1px solid #e0e0e0;
-        }
-        .timeline-item:hover {
-            transform: scale(1.05);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        .timeline-year {
-            font-size: 0.9em;
-            color: #2c3e50;
-            font-weight: 500;
-            margin-bottom: 6px;
-        }
-        .timeline-icon {
-            font-size: 1.8em;
-            margin: 6px 0;
-        }
-        .timeline-temp {
-            font-size: 0.85em;
-            color: #666;
-        }
-        .prediction-box {
-            margin-top: 25px;
-            padding: 20px;
-            background: #e8f4f8;
-            border-radius: 8px;
-            text-align: center;
-            border-left: 4px solid #3498db;
-        }
-        .prediction-title {
-            color: #2c3e50;
-            font-weight: bold;
-            margin-bottom: 12px;
-            font-size: 1.1em;
-        }
-        .timeline-loading {
-            text-align: center;
-            color: #666;
-            padding: 20px;
-        }
-        @media (max-width: 768px) {
-            .timeline-grid {
-                grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-                gap: 8px;
-            }
-            .timeline-item {
-                padding: 8px;
-            }
-            .timeline-year {
-                font-size: 0.8em;
-            }
-            .timeline-icon {
-                font-size: 1.5em;
-            }
-            .timeline-temp {
-                font-size: 0.75em;
-            }
-        }
-    </style>
+       .horoscope-container {
+           margin: 30px 0;
+           padding: 25px;
+           background: white;
+           border-radius: 12px;
+           box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+       }
+
+       .horoscope-header {
+           text-align: center;
+           font-size: 1.2em;
+           color: #2c3e50;
+           margin-bottom: 20px;
+           font-weight: 500;
+       }
+
+       .trait-cards {
+           display: flex;
+           flex-direction: column;
+           gap: 15px;
+       }
+
+       .trait-card {
+           padding: 20px;
+           border-radius: 8px;
+           background: #f8f9fa;
+           font-size: 1.1em;
+           line-height: 1.4;
+       }
+
+       .trait-card.sunny {
+           border-left: 4px solid #f1c40f;
+       }
+
+       .trait-card.stormy {
+           border-left: 4px solid #e74c3c;
+       }
+
+       .weather-description {
+           font-size: 1.2em;
+           margin: 20px 0;
+           text-align: center;
+           color: #2c3e50;
+           line-height: 1.6;
+           padding: 0 10px;
+       }
+       .birthday-message {
+           font-size: 1.5em;
+           margin: 15px 0;
+           text-align: center;
+           color: #2c3e50;
+           line-height: 1.6;
+           font-weight: bold;
+       }
+       .temp-info {
+           margin: 15px 0;
+           font-size: 1.1em;
+           color: #2c3e50;
+       }
+
+       .toast {
+           position: fixed;
+           bottom: 20px;
+           left: 50%;
+           transform: translateX(-50%);
+           background-color: #2ecc71;
+           color: white;
+           padding: 12px 24px;
+           border-radius: 6px;
+           font-size: 16px;
+           display: none;
+           z-index: 10000;
+           box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+           animation: fadeInUp 0.3s ease;
+       }
+
+       .share-button {
+           background-color: #3498db;
+           color: white;
+           border: none;
+           border-radius: 6px;
+           padding: 12px 24px;
+           margin: 5px;
+           font-size: 16px;
+           cursor: pointer;
+           display: inline-block;
+           min-width: 200px;
+           transition: background-color 0.3s;
+       }
+
+       .share-button:hover {
+           background-color: #2980b9;
+       }
+
+       #twitterBtn {
+           background-color: #1DA1F2;
+       }
+
+       #twitterBtn:hover {
+           background-color: #1a89d0;
+       }
+
+       @keyframes fadeInUp {
+           from {
+               opacity: 0;
+               transform: translate(-50%, 20px);
+           }
+           to {
+               opacity: 1;
+               transform: translate(-50%, 0);
+           }
+       }
+
+       @media (max-width: 768px) {
+           body {
+               padding: 10px;
+           }
+           
+           .dob-container {
+               flex-direction: column;
+               align-items: center;
+               gap: 10px;
+           }
+           
+           #searchInput, select {
+               width: 100%;
+               max-width: 300px;
+               margin: 5px 0;
+           }
+           
+           .trait-card {
+               padding: 12px;
+           }
+           
+           .weather-icon {
+               font-size: 100px !important;
+           }
+           
+           .share-button {
+               width: 90%;
+               margin: 5px auto;
+           }
+       }
+   </style>
 </head>
 <body>
     <div class="header">
@@ -424,13 +357,6 @@
     </div>
 
     <div id="weatherResult"></div>
-
-    <!-- New timeline container -->
-    <div id="timelineContainer" style="display: none" class="timeline-container">
-        <div class="timeline-header">Your Birthday Weather History</div>
-        <div id="timelineGrid" class="timeline-grid"></div>
-        <div id="weatherPrediction" class="prediction-box"></div>
-    </div>
     
     <div id="shareContainer" style="display: none">
         <button id="shareBtn" class="share-button">
@@ -443,6 +369,7 @@
 
     <div class="toast" id="toast"></div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
     <script>
         const websiteURL = 'www.weatherbirthday.com';
@@ -478,12 +405,47 @@
             }
         };
 
+        function determineWeatherType(weatherCode, temperature, precipitation) {
+            if (temperature > 32) return 'scorchingHot';
+            if (weatherCode === 0 || weatherCode === 1) return 'sunny';
+            if ([61, 63, 65, 80, 81, 82].includes(weatherCode)) return 'rainy';
+            if ([95, 96, 99].includes(weatherCode)) return 'stormy';
+            if ([2, 3].includes(weatherCode)) return 'cloudy';
+            if ([71, 73, 75, 77, 85, 86].includes(weatherCode)) return 'snowy';
+            if (temperature < 5) return 'cold';
+            return 'sunny';
+        }
+
+        function generateWeatherPersonality(weatherCode, temperature, precipitation) {
+            const type = determineWeatherType(weatherCode, temperature, precipitation);
+            return weatherPersonality[type];
+        }
+
+        function generateHoroscopeDisplay(personality) {
+            return `
+                <div class="horoscope-container">
+                    <div class="horoscope-header">
+                        Based on your birthday weather...
+                    </div>
+                    <div class="trait-cards">
+                        <div class="trait-card sunny">
+                            ✨ ${personality.bright}
+                        </div>
+                        <div class="trait-card stormy">
+                            ⚡ ${personality.shadow}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         $(document).ready(function() {
             let selectedCity = null;
             let isFahrenheit = true;
 
             function showToast(message, duration = 3000) {
                 const toast = $('#toast');
+                toast.text
                 toast.text(message).fadeIn();
                 setTimeout(() => toast.fadeOut(), duration);
             }
@@ -584,84 +546,6 @@
                 return `${tempDesc} ${weatherDesc}${extraDetail}`;
             }
 
-            // New function to fetch historical weather data
-            async function fetchHistoricalWeather(latitude, longitude, month, day, startYear, endYear) {
-                const weatherData = [];
-                $('#timelineGrid').html('<div class="timeline-loading">Loading historical weather data...</div>');
-                
-                for (let year = startYear; year <= endYear; year++) {
-                    const date = `${year}-${month}-${day}`;
-                    try {
-                        const response = await $.ajax({
-                            url: "/weather",
-                            data: {
-                                latitude: latitude,
-                                longitude: longitude,
-                                date: date
-                            }
-                        });
-                        if (response.daily?.temperature_2m_max) {
-                            weatherData.push({
-                                year: year,
-                                maxTemp: response.daily.temperature_2m_max[0],
-                                weatherCode: response.daily.weathercode[0]
-                            });
-                        }
-                    } catch (error) {
-                        console.error(`Error fetching weather for ${date}:`, error);
-                    }
-                }
-                return weatherData;
-            }
-
-            // New function to render timeline
-            function renderTimeline(weatherData) {
-                const timelineGrid = $('#timelineGrid');
-                timelineGrid.empty();
-
-                weatherData.forEach(data => {
-                    const weatherIcon = getWeatherIcon(data.weatherCode);
-                    const temp = isFahrenheit ? 
-                        celsiusToFahrenheit(data.maxTemp).toFixed(0) : 
-                        data.maxTemp.toFixed(0);
-                    
-                    const timelineItem = $(`
-                        <div class="timeline-item">
-                            <div class="timeline-year">${data.year}</div>
-                            <div class="timeline-icon">${weatherIcon}</div>
-                            <div class="timeline-temp">${temp}${isFahrenheit ? '°F' : '°C'}</div>
-                        </div>
-                    `);
-                    timelineGrid.append(timelineItem);
-                });
-            }
-
-            // New function to predict next birthday weather
-            function predictNextBirthday(weatherData) {
-                // Calculate weather patterns
-                const weatherCounts = {};
-                let totalTemp = 0;
-                let recentYears = weatherData.slice(-5); // Look at last 5 years
-
-                weatherData.forEach(data => {
-                    weatherCounts[data.weatherCode] = (weatherCounts[data.weatherCode] || 0) + 1;
-                    totalTemp += data.maxTemp;
-                });
-
-                // Find most common weather type
-                const mostCommonWeather = Object.entries(weatherCounts)
-                    .sort((a, b) => b[1] - a[1])[0][0];
-
-                // Calculate average temperature with recent years weighted more
-                const avgTemp = totalTemp / weatherData.length;
-                
-                return {
-                    weatherCode: parseInt(mostCommonWeather),
-                    temperature: avgTemp,
-                    confidence: (Math.max(...Object.values(weatherCounts)) / weatherData.length) * 100
-                };
-            }
-
             function formatDate(year, month, day) {
                 const date = new Date(year, month - 1, day);
                 return date.toLocaleDateString('en-US', { 
@@ -692,6 +576,7 @@
                     weatherDesc: shareData.weatherDesc
                 });
 
+                // Universal share button
                 shareBtn.onclick = async () => {
                     if (navigator.share) {
                         try {
@@ -703,6 +588,7 @@
                             gtag('event', 'share', { 'method': 'native_share' });
                         } catch (err) {
                             if (err.name !== 'AbortError') {
+                                // Fallback to clipboard
                                 try {
                                     await navigator.clipboard.writeText(shareText);
                                     showToast('Copied to clipboard! 📋');
@@ -714,6 +600,7 @@
                             }
                         }
                     } else {
+                        // Fallback for browsers without share API
                         try {
                             await navigator.clipboard.writeText(shareText);
                             showToast('Copied to clipboard! 📋');
@@ -725,6 +612,7 @@
                     }
                 };
 
+                // Twitter share button
                 twitterBtn.onclick = () => {
                     const twitterText = encodeURIComponent(shareText);
                     window.open(`https://twitter.com/intent/tweet?text=${twitterText}`, '_blank');
@@ -775,7 +663,7 @@
                 $('#getWeather').toggle(day && month && year && hasCity && hasFriendName);
             }
 
-            async function checkWeather() {
+            function checkWeather() {
                 if (!selectedCity) return;
                 
                 const year = $('#dobYear').val();
@@ -787,118 +675,80 @@
                 const formattedDate = formatDate(year, month, day);
 
                 $('#weatherResult').html('Loading...');
-                $('#timelineContainer').hide();
 
-                try {
-                    const response = await $.ajax({
-                        url: "/weather",
-                        data: {
-                            latitude: selectedCity.latitude,
-                            longitude: selectedCity.longitude,
-                            date: date
-                        }
-                    });
+                $.ajax({
+                    url: "/weather",
+                    data: {
+                        latitude: selectedCity.latitude,
+                        longitude: selectedCity.longitude,
+                        date: date
+                    },
+                    success: function(data) {
+                        if (data.daily && data.daily.temperature_2m_max) {
+                            const maxTemp = isFahrenheit ? 
+                                celsiusToFahrenheit(data.daily.temperature_2m_max[0]).toFixed(1) : 
+                                data.daily.temperature_2m_max[0].toFixed(1);
+                            const minTemp = isFahrenheit ? 
+                                celsiusToFahrenheit(data.daily.temperature_2m_min[0]).toFixed(1) : 
+                                data.daily.temperature_2m_min[0].toFixed(1);
+                            const unit = isFahrenheit ? '°F' : '°C';
+                            const weatherIcon = getWeatherIcon(data.daily.weathercode[0]);
+                            const weatherDesc = getWeatherDescription(
+                                data.daily.weathercode[0],
+                                data.daily.temperature_2m_max[0],
+                                data.daily.temperature_2m_min[0],
+                                data.daily.precipitation_sum[0],
+                                isFahrenheit
+                            );
 
-                    if (response.daily && response.daily.temperature_2m_max) {
-                        const maxTemp = isFahrenheit ? 
-                            celsiusToFahrenheit(response.daily.temperature_2m_max[0]).toFixed(1) : 
-                            response.daily.temperature_2m_max[0].toFixed(1);
-                        const minTemp = isFahrenheit ? 
-                            celsiusToFahrenheit(response.daily.temperature_2m_min[0]).toFixed(1) : 
-                            response.daily.temperature_2m_min[0].toFixed(1);
-                        const unit = isFahrenheit ? '°F' : '°C';
-                        const weatherIcon = getWeatherIcon(response.daily.weathercode[0]);
-                        const weatherDesc = getWeatherDescription(
-                            response.daily.weathercode[0],
-                            response.daily.temperature_2m_max[0],
-                            response.daily.temperature_2m_min[0],
-                            response.daily.precipitation_sum[0],
-                            isFahrenheit
-                        );
+                            let title;
+                            if (isFriendMode) {
+                                title = `Happy Birthday, ${friendName}!`;
+                            } else {
+                                title = `On ${formattedDate} in ${selectedCity.city}`;
+                            }
 
-                        let title;
-                        if (isFriendMode) {
-                            title = `Happy Birthday, ${friendName}!`;
-                        } else {
-                            title = `On ${formattedDate} in ${selectedCity.city}`;
-                        }
+                            const shareData = {
+                                mode: isFriendMode ? 'friend' : 'personal',
+                                date: formattedDate,
+                                city: selectedCity.city,
+                                weatherDesc: weatherDesc
+                            };
 
-                        const shareData = {
-                            mode: isFriendMode ? 'friend' : 'personal',
-                            date: formattedDate,
-                            city: selectedCity.city,
-                            weatherDesc: weatherDesc
-                        };
-
-                        $('#weatherResult').html(`
-                            <h3 class="birthday-message">${title}</h3>
-                            <div class="weather-icon">${weatherIcon}</div>
-                            <div class="weather-description">It was ${weatherDesc}!</div>
-                            <div class="temp-info">
-                                <p>High Temperature: ${maxTemp}${unit}</p>
-                                <p>Low Temperature: ${minTemp}${unit}</p>
-                                <p>Precipitation: ${response.daily.precipitation_sum[0]} mm</p>
-                            </div>
-                            ${generateHoroscopeDisplay(generateWeatherPersonality(
-                                response.daily.weathercode[0],
-                                response.daily.temperature_2m_max[0],
-                                response.daily.precipitation_sum[0]
-                            ))}
-                        `);
-
-                        setupSharing(shareData);
-                        
-                        // After showing current weather, fetch historical data
-                        const birthYear = parseInt(year);
-                        const currentYear = new Date().getFullYear();
-                        const historicalData = await fetchHistoricalWeather(
-                            selectedCity.latitude,
-                            selectedCity.longitude,
-                            month,
-                            day,
-                            birthYear,
-                            currentYear
-                        );
-
-                        if (historicalData.length > 0) {
-                            // Show timeline
-                            $('#timelineContainer').show();
-                            renderTimeline(historicalData);
-
-                            // Generate and show prediction
-                            const prediction = predictNextBirthday(historicalData);
-                            const nextYear = currentYear + 1;
-                            const predictionTemp = isFahrenheit ? 
-                                celsiusToFahrenheit(prediction.temperature).toFixed(1) : 
-                                prediction.temperature.toFixed(1);
-
-                            const confidenceLevel = prediction.confidence >= 75 ? 'High' :
-                                                prediction.confidence >= 50 ? 'Medium' : 'Low';
-
-                            $('#weatherPrediction').html(`
-                                <div class="prediction-title">Weather Prediction for ${nextYear}</div>
-                                <div class="timeline-icon">${getWeatherIcon(prediction.weatherCode)}</div>
-                                <div>Expected temperature: ${predictionTemp}${unit}</div>
-                                <div style="margin-top: 8px; font-size: 0.9em; color: #666;">
-                                    Prediction confidence: ${confidenceLevel}
+                            $('#weatherResult').html(`
+                                <h3 class="birthday-message">${title}</h3>
+                                <div class="weather-icon">${weatherIcon}</div>
+                                <div class="weather-description">It was ${weatherDesc}!</div>
+                                <div class="temp-info">
+                                    <p>High Temperature: ${maxTemp}${unit}</p>
+                                    <p>Low Temperature: ${minTemp}${unit}</p>
+                                    <p>Precipitation: ${data.daily.precipitation_sum[0]} mm</p>
                                 </div>
+                                ${generateHoroscopeDisplay(generateWeatherPersonality(
+                                    data.daily.weathercode[0],
+                                    data.daily.temperature_2m_max[0],
+                                    data.daily.precipitation_sum[0]
+                                ))}
                             `);
+
+                            setupSharing(shareData);
+                            
+                            gtag('event', 'view_weather_result', {
+                                'weather_code': data.daily.weathercode[0],
+                                'city': selectedCity.city
+                            });
+                        } else {
+                            $('#weatherResult').html('<p class="error-message">Weather data not available for this date</p>');
                         }
-                        
-                        gtag('event', 'view_weather_result', {
-                            'weather_code': response.daily.weathercode[0],
-                            'city': selectedCity.city
+                    },
+                    error: function(err) {
+                        $('#weatherResult').html('<p class="error-message">Failed to fetch weather data</p>');
+                        gtag('event', 'error', {
+                            'error_type': 'api_error',
+                            'city': selectedCity?.city
                         });
-                    } else {
-                        $('#weatherResult').html('<p class="error-message">Weather data not available for this date</p>');
                     }
-                } catch (error) {
-                    $('#weatherResult').html('<p class="error-message">Failed to fetch weather data</p>');
-                    gtag('event', 'error', {
-                        'error_type': 'api_error',
-                        'city': selectedCity?.city
-                    });
-                }
+                });
             }
 
             $('#dobDay, #dobMonth, #dobYear, #friendNameInput').on('change', checkFormCompletion);
