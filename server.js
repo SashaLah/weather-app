@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const compression = require('compression');
 const { query, validationResult } = require('express-validator');
+const crypto = require('crypto');
 
 let envPath = process.env.NODE_ENV === 'production' ? '/etc/secrets/.env' : '.env';
 require('dotenv').config({ path: envPath });
@@ -13,6 +14,11 @@ require('dotenv').config({ path: envPath });
 const cache = new NodeCache({ 
     stdTTL: 1800,
     checkperiod: 120
+});
+
+const resultsCache = new NodeCache({
+    stdTTL: 86400 * 30, // 30 days
+    checkperiod: 600
 });
 
 const app = express();
@@ -23,7 +29,7 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use(express.static(__dirname));
 
-// Weather code to personality trait mappings
+// Weather code to personality trait mappings - Now more accurately tied to weather conditions
 const weatherTraits = {
     0: { // Clear sky
         traits: [
@@ -108,6 +114,106 @@ const weatherTraits = {
     }
 };
 
+async function fetchHistoricalWeather(latitude, longitude, date) {
+    const startYear = new Date(date).getFullYear();
+    const currentYear = new Date().getFullYear();
+    const currentDate = new Date();
+    
+    const monthDay = date.split('-').slice(1).join('-');
+    const results = [];
+    
+    for (let year = startYear; year <= currentYear; year++) {
+        const checkDate = `${year}-${monthDay}`;
+        if (new Date(checkDate) > currentDate) continue;
+        
+        try {
+            const response = await axios.get(
+                `https://archive-api.open-meteo.com/v1/era5`,
+                {
+                    params: {
+                        latitude,
+                        longitude,
+                        start_date: checkDate,
+                        end_date: checkDate,
+                        daily: 'weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum',
+                        timezone: 'auto'
+                    }
+                }
+            );
+            
+            if (response.data.daily) {
+                results.push({
+                    year,
+                    weathercode: response.data.daily.weathercode[0],
+                    temp_max: response.data.daily.temperature_2m_max[0],
+                    temp_min: response.data.daily.temperature_2m_min[0],
+                    precipitation: response.data.daily.precipitation_sum[0]
+                });
+            }
+        } catch (error) {
+            console.error(`Error fetching data for ${year}:`, error.message);
+        }
+        
+        // Add delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    return results;
+}
+
+function generateHoroscope(weatherData) {
+    const weathercode = weatherData.daily.weathercode[0];
+    const maxTemp = weatherData.daily.temperature_2m_max[0];
+    const minTemp = weatherData.daily.temperature_2m_min[0];
+    const precipitation = weatherData.daily.precipitation_sum[0];
+
+    // Find closest matching weather code
+    const weatherCodes = Object.keys(weatherTraits).map(Number);
+    const closestWeatherCode = weatherCodes.reduce((prev, curr) => 
+        Math.abs(curr - weathercode) < Math.abs(prev - weathercode) ? curr : prev
+    );
+
+    const weatherPersonality = weatherTraits[closestWeatherCode];
+    const tempPersonality = getTemperatureTraits(maxTemp, minTemp);
+
+    // Get random indices for traits
+    const weatherTraitIndex = Math.floor(Math.random() * weatherPersonality.traits.length);
+    const tempTraitIndex = Math.floor(Math.random() * tempPersonality.traits.length);
+
+    const horoscope = {
+        weather_summary: weatherPersonality.mood,
+        temperature_insight: tempPersonality.mood,
+        personality_traits: [
+            weatherPersonality.traits[weatherTraitIndex],
+            tempPersonality.traits[tempTraitIndex]
+        ]
+    };
+
+    // Add precipitation-based insights
+    if (precipitation > 0) {
+        horoscope.personality_traits.push(
+            "You're not afraid to show your emotions",
+            "You help others grow and flourish"
+        );
+    }
+
+    return horoscope;
+}
+
+function generateShareableId(data) {
+    const stringData = JSON.stringify({
+        date: data.date,
+        location: data.location,
+        weather: data.weather
+    });
+    
+    return crypto
+        .createHash('sha256')
+        .update(stringData)
+        .digest('hex')
+        .substring(0, 12);
+}
+
 // Temperature-based personality insights
 function getTemperatureTraits(maxTemp, minTemp) {
     const avgTemp = (maxTemp + minTemp) / 2;
@@ -153,45 +259,6 @@ function getTemperatureTraits(maxTemp, minTemp) {
             mood: "Your crisp energy brings clarity to confusion."
         };
     }
-}
-
-function generateHoroscope(weatherData) {
-    const weathercode = weatherData.daily.weathercode[0];
-    const maxTemp = weatherData.daily.temperature_2m_max[0];
-    const minTemp = weatherData.daily.temperature_2m_min[0];
-    const precipitation = weatherData.daily.precipitation_sum[0];
-
-    // Find closest matching weather code
-    const weatherCodes = Object.keys(weatherTraits).map(Number);
-    const closestWeatherCode = weatherCodes.reduce((prev, curr) => 
-        Math.abs(curr - weathercode) < Math.abs(prev - weathercode) ? curr : prev
-    );
-
-    const weatherPersonality = weatherTraits[closestWeatherCode];
-    const tempPersonality = getTemperatureTraits(maxTemp, minTemp);
-
-    // Generate random indices for traits
-    const weatherTraitIndex = Math.floor(Math.random() * weatherPersonality.traits.length);
-    const tempTraitIndex = Math.floor(Math.random() * tempPersonality.traits.length);
-
-    const horoscope = {
-        weather_summary: weatherPersonality.mood,
-        temperature_insight: tempPersonality.mood,
-        personality_traits: [
-            weatherPersonality.traits[weatherTraitIndex],
-            tempPersonality.traits[tempTraitIndex]
-        ]
-    };
-
-    // Add precipitation-based insights
-    if (precipitation > 0) {
-        horoscope.personality_traits.push(
-            "You're not afraid to show your emotions",
-            "You help others grow and flourish"
-        );
-    }
-
-    return horoscope;
 }
 
 // Logging middleware
@@ -262,6 +329,16 @@ const validateCitySearch = [
         next();
     }
 ];
+
+// New: Route for accessing shared results
+app.get('/result/:id', (req, res) => {
+    const resultData = resultsCache.get(req.params.id);
+    if (resultData) {
+        res.json(resultData);
+    } else {
+        res.status(404).json({ error: 'Result not found' });
+    }
+});
 
 app.get('/cities', validateCitySearch, async (req, res) => {
     try {
@@ -349,88 +426,56 @@ app.get('/weather', async (req, res) => {
             });
         }
 
-        if (isNaN(latitude) || isNaN(longitude)) {
-            return res.status(400).json({ 
-                error: 'Invalid coordinates',
-                message: 'Latitude and longitude must be valid numbers' 
-            });
-        }
-
-        const requestDate = new Date(date);
-        if (isNaN(requestDate.getTime())) {
-            return res.status(400).json({
-                error: 'Invalid date',
-                message: 'Please provide a valid date'
-            });
-        }
-
         const cacheKey = `weather_${latitude}_${longitude}_${date}`;
         const cachedWeather = cache.get(cacheKey);
         if (cachedWeather) {
             return res.json(cachedWeather);
         }
 
-        const formatDate = (d) => d.toISOString().split('T')[0];
-        const formattedDate = formatDate(requestDate);
-        
-        const baseParams = new URLSearchParams({
-            latitude: latitude,
-            longitude: longitude,
-            daily: 'temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode',
-            timezone: 'auto',
-            start_date: formattedDate,
-            end_date: formattedDate
-        }).toString();
-
-        const today = new Date();
-        const isHistorical = requestDate < today;
-        
-        const url = isHistorical
-            ? `https://archive-api.open-meteo.com/v1/era5?${baseParams}`
-            : `https://api.open-meteo.com/v1/forecast?${baseParams}`;
-
-        const response = await axios.get(url);
-        const weatherData = response.data;
-
-        if (!weatherData.daily?.temperature_2m_max?.length) {
-            return res.status(404).json({ 
-                error: 'No data available',
-                message: 'No weather data available for this date and location' 
-            });
-        }
-
-        // Generate horoscope based on weather
-        const horoscope = generateHoroscope(weatherData);
-
-        // Add metadata to response
-        weatherData.meta = {
-            date: formattedDate,
-            data_type: isHistorical ? 'historical' : 'forecast',
-            location: {
-                latitude: parseFloat(latitude),
-                longitude: parseFloat(longitude)
+        // Fetch current day weather
+        const weatherData = await axios.get(
+            `https://api.open-meteo.com/v1/forecast`,
+            {
+                params: {
+                    latitude,
+                    longitude,
+                    start_date: date,
+                    end_date: date,
+                    daily: 'weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum',
+                    timezone: 'auto'
+                }
             }
+        );
+
+        // Fetch historical timeline
+        const historicalData = await fetchHistoricalWeather(latitude, longitude, date);
+
+        // Generate horoscope
+        const horoscope = generateHoroscope(weatherData.data);
+
+        // Create response object - Fixed structure to match original
+        const responseData = {
+            ...weatherData.data,  // Spread the weather data directly
+            historical: historicalData,
+            horoscope,
+            shareableId: generateShareableId({
+                date,
+                location: { latitude, longitude },
+                weather: weatherData.data
+            })
         };
 
-        // Add horoscope to response
-        weatherData.horoscope = horoscope;
-
-        cache.set(cacheKey, weatherData);
-        res.json(weatherData);
+        // Cache both results
+        resultsCache.set(responseData.shareableId, responseData);
+        cache.set(cacheKey, responseData);
+        
+        res.json(responseData);
 
     } catch (error) {
-        console.error('Weather API error:', error.response?.data || error);
-        
-        if (error.response?.status === 404) {
-            return res.status(404).json({ 
-                error: 'Not found',
-                message: 'Weather data not available for this date/location' 
-            });
-        }
-        
+        console.error('Weather API error:', error);
         res.status(500).json({ 
             error: 'Weather API error',
-            message: error.response?.data?.reason || error.message || 'Failed to fetch weather data'
+            message: error.message
         });
     }
 });
