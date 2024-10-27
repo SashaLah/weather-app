@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const compression = require('compression');
 const { query, validationResult } = require('express-validator');
+const crypto = require('crypto');
 
 let envPath = process.env.NODE_ENV === 'production' ? '/etc/secrets/.env' : '.env';
 require('dotenv').config({ path: envPath });
@@ -13,6 +14,11 @@ require('dotenv').config({ path: envPath });
 const cache = new NodeCache({ 
     stdTTL: 1800,
     checkperiod: 120
+});
+
+const resultsCache = new NodeCache({
+    stdTTL: 86400 * 30, // 30 days
+    checkperiod: 600
 });
 
 const app = express();
@@ -23,175 +29,175 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use(express.static(__dirname));
 
-// Weather code to personality trait mappings
+// Weather code to personality trait mappings - Now more accurately tied to weather conditions
 const weatherTraits = {
-    0: { // Clear sky
+    clearSky: {
+        codes: [0, 1],
         traits: [
-            "You have a bright and sunny personality",
-            "You bring clarity to difficult situations",
-            "You're naturally optimistic",
-            "You thrive in the spotlight"
+            "You have a naturally bright and optimistic personality",
+            "You bring clarity and warmth to those around you",
+            "You shine brightest when helping others",
+            "Your energy is infectious and uplifting"
         ],
-        mood: "Your energy radiates like the clear sky on your special day!"
+        mood: "Like a clear sky, you bring light and warmth to everyone around you!"
     },
-    1: { // Mainly clear
+    partlyCloudy: {
+        codes: [2],
         traits: [
-            "You're mostly straightforward but keep some mystery",
-            "You have a calm and steady presence",
-            "You're good at finding silver linings",
-            "You appreciate life's simple pleasures"
+            "You have a balanced and adaptable nature",
+            "You see multiple sides of every situation",
+            "You bring harmony to complex situations",
+            "You're thoughtful and considerate"
         ],
-        mood: "Like a day with gentle clouds, you bring both light and depth to those around you."
+        mood: "Like a partly cloudy day, you bring both sunshine and gentle shade!"
     },
-    2: { // Partly cloudy
+    cloudy: {
+        codes: [3],
         traits: [
-            "You have a complex and interesting personality",
-            "You're adaptable to change",
-            "You see both sides of every situation",
-            "You're thoughtful and contemplative"
+            "You have deep wisdom and insight",
+            "You're protective of those you care about",
+            "You bring calm to stormy situations",
+            "You're thoughtful and mysterious"
         ],
-        mood: "Your versatile nature helps you navigate life's changing seasons."
+        mood: "Like clouds bringing needed shade, you offer comfort and protection."
     },
-    3: { // Overcast
+    foggy: {
+        codes: [45, 48],
         traits: [
-            "You're deep and introspective",
-            "You have rich inner thoughts",
-            "You're protective of those you love",
-            "You have hidden depths that surprise people"
+            "You have a mysterious and intriguing personality",
+            "You help others see things from new perspectives",
+            "You're comfortable with life's uncertainties",
+            "You bring depth to shallow situations"
         ],
-        mood: "Like an overcast sky, you carry depth and mystery that others find intriguing."
+        mood: "Like fog that transforms familiar landscapes, you help others see things differently."
     },
-    45: { // Foggy
+    drizzle: {
+        codes: [51, 53, 55],
         traits: [
-            "You're mysterious and enigmatic",
-            "You have a dreamy perspective on life",
-            "You help others see things differently",
-            "You're comfortable with uncertainty"
+            "You have a gentle and nurturing nature",
+            "You bring subtle but meaningful change",
+            "You're patient and persistent",
+            "Your presence is softly refreshing"
         ],
-        mood: "Your mysterious nature adds intrigue to everyday situations."
+        mood: "Like gentle rain that nurtures growth, you bring quiet transformation."
     },
-    51: { // Light drizzle
+    rain: {
+        codes: [61, 63, 65, 80, 81, 82],
         traits: [
-            "You're gentle and nurturing",
-            "You have a subtle but lasting impact",
-            "You're refreshing to be around",
-            "You bring growth to everything you touch"
+            "You're deeply emotional and caring",
+            "You wash away negativity",
+            "You help others grow and flourish",
+            "You bring renewal and fresh starts"
         ],
-        mood: "Like a gentle drizzle, you nurture growth in others."
+        mood: "Like rain that brings new life, you help others flourish and grow!"
     },
-    61: { // Rain
+    snow: {
+        codes: [71, 73, 75, 77, 85, 86],
         traits: [
-            "You're emotional and deeply feeling",
-            "You cleanse negative energy",
-            "You're naturally nurturing",
-            "You help others grow and flourish"
-        ],
-        mood: "Your emotional depth brings renewal and growth to relationships."
-    },
-    71: { // Snow
-        traits: [
-            "You're pure-hearted and unique",
+            "You have a pure and peaceful nature",
             "You transform environments you enter",
             "You bring magic to ordinary moments",
-            "You have a peaceful presence"
+            "Your presence creates tranquility"
         ],
-        mood: "Like snowflakes, you bring unique beauty to the world."
+        mood: "Like snow that transforms the world, you bring magic and peace to those around you."
     },
-    95: { // Thunderstorm
+    thunderstorm: {
+        codes: [95, 96, 99],
         traits: [
-            "You have a powerful presence",
-            "You're energetic and dynamic",
-            "You create lasting impressions",
-            "You're a force of nature"
+            "You have a powerful and dynamic presence",
+            "You're a force for positive change",
+            "You bring excitement and energy",
+            "You make lasting impressions"
         ],
-        mood: "Your powerful energy creates memorable moments wherever you go."
+        mood: "Like a powerful storm, you bring dramatic positive change to the world!"
     }
 };
 
-// Temperature-based personality insights
-function getTemperatureTraits(maxTemp, minTemp) {
-    const avgTemp = (maxTemp + minTemp) / 2;
-    
-    if (avgTemp > 30) {
-        return {
-            traits: [
-                "You have a fiery and passionate nature",
-                "You bring warmth to all your relationships",
-                "You thrive in high-energy situations",
-                "You naturally motivate others"
-            ],
-            mood: "Your warm personality lights up any room you enter!"
-        };
-    } else if (avgTemp > 20) {
-        return {
-            traits: [
-                "You have a warm and balanced personality",
-                "You make others feel comfortable",
-                "You're adaptable and easy-going",
-                "You bring harmony to group situations"
-            ],
-            mood: "Your comfortable presence puts others at ease."
-        };
-    } else if (avgTemp > 10) {
-        return {
-            traits: [
-                "You have a cool and collected nature",
-                "You think clearly under pressure",
-                "You're refreshing to be around",
-                "You bring perspective to heated situations"
-            ],
-            mood: "Your cool composure helps others find balance."
-        };
-    } else {
-        return {
-            traits: [
-                "You have a crystal-clear mind",
-                "You stay cool in any situation",
-                "You're refreshingly honest",
-                "You preserve your energy well"
-            ],
-            mood: "Your crisp energy brings clarity to confusion."
-        };
+function getWeatherType(weatherCode) {
+    for (const [type, data] of Object.entries(weatherTraits)) {
+        if (data.codes.includes(weatherCode)) {
+            return type;
+        }
     }
+    return 'clearSky'; // default if no match found
+}
+
+async function fetchHistoricalWeather(latitude, longitude, date) {
+    const startYear = new Date(date).getFullYear();
+    const currentYear = new Date().getFullYear();
+    const currentDate = new Date();
+    
+    const monthDay = date.split('-').slice(1).join('-');
+    const results = [];
+    
+    for (let year = startYear; year <= currentYear; year++) {
+        const checkDate = `${year}-${monthDay}`;
+        if (new Date(checkDate) > currentDate) continue;
+        
+        try {
+            const response = await axios.get(
+                `https://archive-api.open-meteo.com/v1/era5`,
+                {
+                    params: {
+                        latitude,
+                        longitude,
+                        start_date: checkDate,
+                        end_date: checkDate,
+                        daily: 'weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum',
+                        timezone: 'auto'
+                    }
+                }
+            );
+            
+            if (response.data.daily) {
+                results.push({
+                    year,
+                    weathercode: response.data.daily.weathercode[0],
+                    temp_max: response.data.daily.temperature_2m_max[0],
+                    temp_min: response.data.daily.temperature_2m_min[0],
+                    precipitation: response.data.daily.precipitation_sum[0]
+                });
+            }
+        } catch (error) {
+            console.error(`Error fetching data for ${year}:`, error.message);
+        }
+        
+        // Add delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    return results;
 }
 
 function generateHoroscope(weatherData) {
     const weathercode = weatherData.daily.weathercode[0];
-    const maxTemp = weatherData.daily.temperature_2m_max[0];
-    const minTemp = weatherData.daily.temperature_2m_min[0];
-    const precipitation = weatherData.daily.precipitation_sum[0];
-
-    // Find closest matching weather code
-    const weatherCodes = Object.keys(weatherTraits).map(Number);
-    const closestWeatherCode = weatherCodes.reduce((prev, curr) => 
-        Math.abs(curr - weathercode) < Math.abs(prev - weathercode) ? curr : prev
-    );
-
-    const weatherPersonality = weatherTraits[closestWeatherCode];
-    const tempPersonality = getTemperatureTraits(maxTemp, minTemp);
-
-    // Generate random indices for traits
-    const weatherTraitIndex = Math.floor(Math.random() * weatherPersonality.traits.length);
-    const tempTraitIndex = Math.floor(Math.random() * tempPersonality.traits.length);
-
-    const horoscope = {
-        weather_summary: weatherPersonality.mood,
-        temperature_insight: tempPersonality.mood,
-        personality_traits: [
-            weatherPersonality.traits[weatherTraitIndex],
-            tempPersonality.traits[tempTraitIndex]
-        ]
+    const weatherType = getWeatherType(weathercode);
+    const traits = weatherTraits[weatherType];
+    
+    // Get random traits but ensure we don't repeat
+    const selectedTraits = [...traits.traits]
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 2);
+    
+    return {
+        weather_type: weatherType,
+        weather_summary: traits.mood,
+        personality_traits: selectedTraits
     };
+}
 
-    // Add precipitation-based insights
-    if (precipitation > 0) {
-        horoscope.personality_traits.push(
-            "You're not afraid to show your emotions",
-            "You help others grow and flourish"
-        );
-    }
-
-    return horoscope;
+function generateShareableId(data) {
+    const stringData = JSON.stringify({
+        date: data.date,
+        location: data.location,
+        weather: data.weather
+    });
+    
+    return crypto
+        .createHash('sha256')
+        .update(stringData)
+        .digest('hex')
+        .substring(0, 12);
 }
 
 // Logging middleware
@@ -248,6 +254,7 @@ function calculateMatchQuality(cityName, searchTerm) {
     return 0;
 }
 
+// Input validation
 const validateCitySearch = [
     query('term')
         .trim()
@@ -262,6 +269,16 @@ const validateCitySearch = [
         next();
     }
 ];
+
+// Routes
+app.get('/result/:id', (req, res) => {
+    const resultData = resultsCache.get(req.params.id);
+    if (resultData) {
+        res.json(resultData);
+    } else {
+        res.status(404).json({ error: 'Result not found' });
+    }
+});
 
 app.get('/cities', validateCitySearch, async (req, res) => {
     try {
@@ -349,88 +366,61 @@ app.get('/weather', async (req, res) => {
             });
         }
 
-        if (isNaN(latitude) || isNaN(longitude)) {
-            return res.status(400).json({ 
-                error: 'Invalid coordinates',
-                message: 'Latitude and longitude must be valid numbers' 
-            });
-        }
-
-        const requestDate = new Date(date);
-        if (isNaN(requestDate.getTime())) {
-            return res.status(400).json({
-                error: 'Invalid date',
-                message: 'Please provide a valid date'
-            });
-        }
-
         const cacheKey = `weather_${latitude}_${longitude}_${date}`;
         const cachedWeather = cache.get(cacheKey);
         if (cachedWeather) {
             return res.json(cachedWeather);
         }
 
-        const formatDate = (d) => d.toISOString().split('T')[0];
-        const formattedDate = formatDate(requestDate);
-        
-        const baseParams = new URLSearchParams({
-            latitude: latitude,
-            longitude: longitude,
-            daily: 'temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode',
-            timezone: 'auto',
-            start_date: formattedDate,
-            end_date: formattedDate
-        }).toString();
-
-        const today = new Date();
-        const isHistorical = requestDate < today;
-        
-        const url = isHistorical
-            ? `https://archive-api.open-meteo.com/v1/era5?${baseParams}`
-            : `https://api.open-meteo.com/v1/forecast?${baseParams}`;
-
-        const response = await axios.get(url);
-        const weatherData = response.data;
-
-        if (!weatherData.daily?.temperature_2m_max?.length) {
-            return res.status(404).json({ 
-                error: 'No data available',
-                message: 'No weather data available for this date and location' 
-            });
-        }
-
-        // Generate horoscope based on weather
-        const horoscope = generateHoroscope(weatherData);
-
-        // Add metadata to response
-        weatherData.meta = {
-            date: formattedDate,
-            data_type: isHistorical ? 'historical' : 'forecast',
-            location: {
-                latitude: parseFloat(latitude),
-                longitude: parseFloat(longitude)
+        // Fetch current day weather
+        const weatherData = await axios.get(
+            `https://api.open-meteo.com/v1/forecast`,
+            {
+                params: {
+                    latitude,
+                    longitude,
+                    start_date: date,
+                    end_date: date,
+                    daily: 'weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum',
+                    timezone: 'auto'
+                }
             }
+        );
+
+        // Fetch historical timeline
+        const historicalData = await fetchHistoricalWeather(latitude, longitude, date);
+
+        // Generate horoscope
+        const horoscope = generateHoroscope(weatherData.data);
+
+        // Create response object
+        const responseData = {
+            current: weatherData.data,
+            historical: historicalData,
+            horoscope
         };
 
-        // Add horoscope to response
-        weatherData.horoscope = horoscope;
+        // Generate shareable ID
+        const shareableId = generateShareableId({
+            date,
+            location: { latitude, longitude },
+            weather: weatherData.data
+        });
 
-        cache.set(cacheKey, weatherData);
-        res.json(weatherData);
+        // Cache the result with the shareable ID
+        resultsCache.set(shareableId, responseData);
+        responseData.shareableId = shareableId;
+
+        // Cache the weather data
+        cache.set(cacheKey, responseData);
+        
+        res.json(responseData);
 
     } catch (error) {
-        console.error('Weather API error:', error.response?.data || error);
-        
-        if (error.response?.status === 404) {
-            return res.status(404).json({ 
-                error: 'Not found',
-                message: 'Weather data not available for this date/location' 
-            });
-        }
-        
+        console.error('Weather API error:', error);
         res.status(500).json({ 
             error: 'Weather API error',
-            message: error.response?.data?.reason || error.message || 'Failed to fetch weather data'
+            message: error.message
         });
     }
 });
