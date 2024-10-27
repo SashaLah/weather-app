@@ -1,11 +1,11 @@
-const fs = require('fs');
-const path = require('path');
-const compression = require('compression');
-const { query, validationResult } = require('express-validator');
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const NodeCache = require('node-cache');
+const fs = require('fs');
+const path = require('path');
+const compression = require('compression');
+const { query, validationResult } = require('express-validator');
 
 let envPath = process.env.NODE_ENV === 'production' ? '/etc/secrets/.env' : '.env';
 require('dotenv').config({ path: envPath });
@@ -385,7 +385,6 @@ app.get('/weather', async (req, res) => {
         const today = new Date();
         const isHistorical = requestDate < today;
         
-        // Use ERA5 for historical data, regular API for current/future
         const url = isHistorical
             ? `https://archive-api.open-meteo.com/v1/era5?${baseParams}`
             : `https://api.open-meteo.com/v1/forecast?${baseParams}`;
@@ -400,6 +399,9 @@ app.get('/weather', async (req, res) => {
             });
         }
 
+        // Generate horoscope based on weather
+        const horoscope = generateHoroscope(weatherData);
+
         // Add metadata to response
         weatherData.meta = {
             date: formattedDate,
@@ -410,11 +412,9 @@ app.get('/weather', async (req, res) => {
             }
         };
 
-        // Generate horoscope and add to response
-        const horoscope = generateHoroscope(weatherData);
+        // Add horoscope to response
         weatherData.horoscope = horoscope;
 
-        // Cache the results
         cache.set(cacheKey, weatherData);
         res.json(weatherData);
 
@@ -461,145 +461,5 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);
     console.log(`Server environment: ${process.env.NODE_ENV}`);
 });
-
-// Add new endpoint for fetching historical weather data
-app.get('/historical-weather', async (req, res) => {
-    try {
-        const { latitude, longitude, month, day, startYear, endYear } = req.query;
-
-        if (!latitude || !longitude || !month || !day || !startYear || !endYear) {
-            return res.status(400).json({ 
-                error: 'Missing parameters',
-                message: 'All parameters are required: latitude, longitude, month, day, startYear, endYear' 
-            });
-        }
-
-        const cacheKey = `historical_${latitude}_${longitude}_${month}_${day}_${startYear}_${endYear}`;
-        const cachedData = cache.get(cacheKey);
-        if (cachedData) {
-            return res.json(cachedData);
-        }
-
-        // Fetch data for each year in parallel
-        const years = Array.from(
-            { length: endYear - startYear + 1 }, 
-            (_, i) => startYear + i
-        );
-
-        const weatherPromises = years.map(async (year) => {
-            const date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-            const params = new URLSearchParams({
-                latitude,
-                longitude,
-                daily: 'temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode',
-                timezone: 'auto',
-                start_date: date,
-                end_date: date
-            }).toString();
-
-            try {
-                const response = await axios.get(`https://archive-api.open-meteo.com/v1/era5?${params}`);
-                if (response.data.daily?.temperature_2m_max?.length) {
-                    return {
-                        year,
-                        weather: {
-                            maxTemp: response.data.daily.temperature_2m_max[0],
-                            minTemp: response.data.daily.temperature_2m_min[0],
-                            precipitation: response.data.daily.precipitation_sum[0],
-                            weathercode: response.data.daily.weathercode[0]
-                        }
-                    };
-                }
-                return null;
-            } catch (error) {
-                console.error(`Error fetching data for ${year}:`, error.message);
-                return null;
-            }
-        });
-
-        const results = (await Promise.all(weatherPromises))
-            .filter(result => result !== null);
-
-        if (results.length === 0) {
-            return res.status(404).json({
-                error: 'No data available',
-                message: 'No historical weather data available for the specified parameters'
-            });
-        }
-
-        // Calculate weather patterns and trends
-        const weatherData = {
-            years: results,
-            analysis: {
-                averageMaxTemp: results.reduce((sum, r) => sum + r.weather.maxTemp, 0) / results.length,
-                commonWeatherTypes: calculateCommonWeatherTypes(results),
-                trends: calculateWeatherTrends(results)
-            }
-        };
-
-        cache.set(cacheKey, weatherData);
-        res.json(weatherData);
-
-    } catch (error) {
-        console.error('Historical weather API error:', error);
-        res.status(500).json({
-            error: 'Failed to fetch historical weather data',
-            message: error.message || 'Internal server error'
-        });
-    }
-});
-
-function calculateCommonWeatherTypes(results) {
-    const weatherCounts = results.reduce((counts, r) => {
-        counts[r.weather.weathercode] = (counts[r.weather.weathercode] || 0) + 1;
-        return counts;
-    }, {});
-
-    return Object.entries(weatherCounts)
-        .sort((a, b) => b[1] - a[1])
-        .map(([code, count]) => ({
-            code: parseInt(code),
-            count,
-            percentage: (count / results.length * 100).toFixed(1)
-        }));
-}
-
-function calculateWeatherTrends(results) {
-    const recentYears = results.slice(-5);
-    const olderYears = results.slice(0, -5);
-
-    if (recentYears.length === 0 || olderYears.length === 0) {
-        return null;
-    }
-
-    const recentAvg = recentYears.reduce((sum, r) => sum + r.weather.maxTemp, 0) / recentYears.length;
-    const olderAvg = olderYears.reduce((sum, r) => sum + r.weather.maxTemp, 0) / olderYears.length;
-
-    return {
-        temperatureTrend: recentAvg - olderAvg,
-        recentYearsAvg: recentAvg,
-        weatherPatternStability: calculatePatternStability(results)
-    };
-}
-
-function calculatePatternStability(results) {
-    if (results.length < 2) return null;
-
-    // Calculate year-over-year weather pattern consistency
-    let consistencyScore = 0;
-    for (let i = 1; i < results.length; i++) {
-        const prevWeather = results[i - 1].weather;
-        const currWeather = results[i].weather;
-
-        // Compare weather codes and temperature ranges
-        if (prevWeather.weathercode === currWeather.weathercode) {
-            consistencyScore += 1;
-        } else if (Math.abs(prevWeather.maxTemp - currWeather.maxTemp) < 5) {
-            consistencyScore += 0.5;
-        }
-    }
-
-    return (consistencyScore / (results.length - 1) * 100).toFixed(1);
-}
 
 module.exports = app;
