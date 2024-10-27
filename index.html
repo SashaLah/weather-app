@@ -519,7 +519,7 @@
         }
 
         async function renderWeatherResult(data) {
-            if (!data.current || !data.current.daily) {
+            if (!data || !data.daily) {
                 $('#weatherResult').html('<p class="error-message">No weather data available</p>');
                 return;
             }
@@ -531,7 +531,7 @@
             const day = $('#dobDay').val();
             const formattedDate = formatDate(year, month, day);
 
-            const weatherData = data.current.daily;
+            const weatherData = data.daily;
             const maxTemp = isFahrenheit ? 
                 celsiusToFahrenheit(weatherData.temperature_2m_max[0]).toFixed(1) : 
                 weatherData.temperature_2m_max[0].toFixed(1);
