@@ -1,11 +1,11 @@
-const express = require('express');
-const cors = require('cors');
-const axios = require('axios');
-const NodeCache = require('node-cache');
 const fs = require('fs');
 const path = require('path');
 const compression = require('compression');
 const { query, validationResult } = require('express-validator');
+const NodeCache = require('node-cache');
+const express = require('express');
+const cors = require('cors');
+const axios = require('axios');
 
 let envPath = process.env.NODE_ENV === 'production' ? '/etc/secrets/.env' : '.env';
 require('dotenv').config({ path: envPath });
@@ -399,10 +399,7 @@ app.get('/weather', async (req, res) => {
             });
         }
 
-        // Generate horoscope based on weather
-        const horoscope = generateHoroscope(weatherData);
-
-        // Add metadata to response
+        // Add metadata and horoscope
         weatherData.meta = {
             date: formattedDate,
             data_type: isHistorical ? 'historical' : 'forecast',
@@ -412,7 +409,7 @@ app.get('/weather', async (req, res) => {
             }
         };
 
-        // Add horoscope to response
+        const horoscope = generateHoroscope(weatherData);
         weatherData.horoscope = horoscope;
 
         cache.set(cacheKey, weatherData);
