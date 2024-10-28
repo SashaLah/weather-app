@@ -39,7 +39,6 @@
             font-size: 1.1em;
         }
 
-        /* Input styles */
         #searchInput, select {
             width: 200px;
             padding: 12px;
@@ -74,7 +73,6 @@
             display: none;
         }
 
-        /* Results Grid */
         .results-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -97,7 +95,6 @@
             border-bottom: 2px solid #e0e0e0;
         }
 
-        /* Weather Timeline */
         .timeline-container {
             margin-top: 20px;
             background: white;
@@ -108,29 +105,42 @@
 
         .timeline-grid {
             display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            gap: 4px;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 3px;
             position: relative;
-            padding: 20px 0;
+            padding: 10px 0;
         }
 
-        .timeline-years {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
+        .year-marker {
+            position: absolute;
+            font-size: 0.8em;
             color: #666;
-            font-size: 0.9em;
+        }
+
+        .year-start {
+            left: 0;
+            bottom: -20px;
+        }
+
+        .year-end {
+            right: 0;
+            bottom: -20px;
         }
 
         .weather-tile {
             aspect-ratio: 1;
+            width: 100%;
             border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
             position: relative;
             cursor: pointer;
+        }
+
+        .weather-tile .icon {
+            font-size: 14px;
+            line-height: 1;
         }
 
         .tile-tooltip {
@@ -152,10 +162,9 @@
             display: block;
         }
 
-        /* Stats Section */
         .weather-stats {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             margin-top: 15px;
         }
@@ -165,11 +174,6 @@
             padding: 10px;
             border-radius: 6px;
             text-align: center;
-            transition: transform 0.2s;
-        }
-
-        .stat-item:hover {
-            transform: translateY(-2px);
         }
 
         .stat-label {
@@ -184,7 +188,6 @@
             margin-top: 4px;
         }
 
-        /* Forecast Section */
         .forecast-container {
             background: linear-gradient(135deg, #e0f7fa 0%, #e8eaf6 100%);
             padding: 15px;
@@ -193,18 +196,18 @@
             margin-top: 20px;
         }
 
-        .forecast-header {
-            font-size: 1.1em;
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-
-        .forecast-icon {
-            font-size: 24px;
+        .weather-icon {
+            font-size: 2.5em;
             margin: 10px 0;
         }
 
-        /* Responsive Design */
+        .personality-trait {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            background: #f8f9fa;
+        }
+
         @media (max-width: 768px) {
             .results-grid {
                 grid-template-columns: 1fr;
@@ -253,21 +256,12 @@
             min-width: 200px;
             transition: background-color 0.3s;
         }
-
-        .share-button:hover {
-            background-color: #2980b9;
-        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>Birthday Weather</h1>
-        <div class="subtitle">What's your birthday personality?</div>
-    </div>
-
-    <div class="mode-selector">
-        <button class="mode-button active" data-mode="personal">My Birthday</button>
-        <button class="mode-button" data-mode="friend">Friend's Birthday</button>
+        <div class="subtitle">Discover Your Birthday Weather History</div>
     </div>
 
     <div class="dob-container">
@@ -283,21 +277,17 @@
 
     <div class="results-grid">
         <div class="result-section" id="birthdayWeather">
-            <h3 class="section-header">Birthday Weather</h3>
+            <h3 class="section-header">Weather on the day you were born</h3>
             <div class="weather-content"></div>
         </div>
         <div class="result-section" id="horoscope">
-            <h3 class="section-header">Weather Personality</h3>
+            <h3 class="section-header">Your Weather Personality</h3>
             <div class="horoscope-content"></div>
         </div>
     </div>
 
     <div class="timeline-container">
         <h3 class="section-header">Historical Weather Pattern</h3>
-        <div class="timeline-years">
-            <span class="year-start"></span>
-            <span class="year-end"></span>
-        </div>
         <div class="timeline-grid"></div>
         <div class="weather-stats"></div>
         <div class="forecast-container"></div>
@@ -313,6 +303,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+
     <script>
         const websiteURL = 'www.weatherbirthday.com';
         
@@ -321,27 +312,79 @@
             let isFahrenheit = true;
 
             function getTemperatureColor(temp) {
-                // Enhanced temperature color scale
-                if (temp >= 40) return '#8B0000';      // Dark Red (Scorching)
-                if (temp >= 35) return '#FF0000';      // Red (Very Hot)
-                if (temp >= 30) return '#FF4500';      // Orange Red (Hot)
-                if (temp >= 25) return '#FFA500';      // Orange (Warm)
-                if (temp >= 20) return '#FFD700';      // Yellow (Mild Warm)
-                if (temp >= 15) return '#90EE90';      // Light Green (Pleasant)
-                if (temp >= 10) return '#87CEEB';      // Light Blue (Cool)
-                if (temp >= 5) return '#0000FF';       // Blue (Cold)
-                if (temp >= 0) return '#00008B';       // Dark Blue (Very Cold)
-                return '#800080';                      // Purple (Freezing)
+                if (temp >= 40) return '#8B0000';      // Scorching
+                if (temp >= 35) return '#FF0000';      // Very Hot
+                if (temp >= 30) return '#FF4500';      // Hot
+                if (temp >= 25) return '#FFA500';      // Warm
+                if (temp >= 20) return '#FFD700';      // Mild
+                if (temp >= 15) return '#90EE90';      // Pleasant
+                if (temp >= 10) return '#87CEEB';      // Cool
+                if (temp >= 5) return '#0000FF';       // Cold
+                if (temp >= 0) return '#00008B';       // Very Cold
+                return '#800080';                      // Freezing
             }
 
-            function getWeatherIcon(weatherCode) {
-                const weatherIcons = {
-                    0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️',
-                    51: '🌧️', 53: '🌧️', 55: '🌧️', 61: '🌧️', 63: '🌧️', 65: '🌧️',
-                    71: '🌨️', 73: '🌨️', 75: '🌨️', 77: '🌨️', 80: '🌧️', 81: '🌧️',
-                    82: '🌧️', 85: '🌨️', 86: '🌨️', 95: '⛈️', 96: '⛈️', 99: '⛈️'
+            function getHarshPersonalityTrait(weatherCode, maxTemp, precipitation) {
+                // Direct, controversial personality traits
+                const traits = {
+                    // Clear/Sunny conditions
+                    0: {
+                        positive: "You're naturally cheerful and bring energy to others",
+                        negative: "but you can be hot-headed and exhausting to be around"
+                    },
+                    1: {
+                        positive: "You shine bright and grab attention easily",
+                        negative: "but your need for spotlight can be annoying"
+                    },
+                    // Cloudy conditions
+                    2: {
+                        positive: "You try to brighten others' days",
+                        negative: "but you're often blocked by your own inner darkness"
+                    },
+                    3: {
+                        positive: "You're deep and thoughtful",
+                        negative: "but you tend to bring down the mood wherever you go"
+                    },
+                    // Rainy conditions
+                    51: {
+                        positive: "You're sensitive to others' feelings",
+                        negative: "but you cry way too easily over everything"
+                    },
+                    61: {
+                        positive: "You're emotionally available",
+                        negative: "but your constant emotional outbursts are draining"
+                    },
+                    65: {
+                        positive: "You feel everything deeply",
+                        negative: "but you're a total drama queen"
+                    },
+                    // Stormy conditions
+                    95: {
+                        positive: "You're passionate and intense",
+                        negative: "but you create chaos wherever you go"
+                    },
+                    99: {
+                        positive: "You have a powerful presence",
+                        negative: "but you're overwhelming and destructive"
+                    }
                 };
-                return weatherIcons[weatherCode] || '❓';
+
+                // Temperature-based traits
+                let tempTrait = "";
+                if (maxTemp >= 35) {
+                    tempTrait = "You're quick to anger and unbearable when mad";
+                } else if (maxTemp <= 5) {
+                    tempTrait = "You can be ice cold and push everyone away";
+                }
+
+                // Get base trait or default
+                const baseTrait = traits[weatherCode] || traits[0];
+                return {
+                    traits: [
+                        `${baseTrait.positive} ${baseTrait.negative}`,
+                        tempTrait
+                    ].filter(Boolean)
+                };
             }
 
             function showToast(message, duration = 3000) {
@@ -351,25 +394,22 @@
             }
 
             function renderHistoryTiles(data) {
-                // Set year indicators
-                $('.year-start').text(data.timeline[0].year);
-                $('.year-end').text(data.timeline[data.timeline.length - 1].year);
-
-                // Create tiles
-                const tilesHtml = data.timeline.map(year => {
+                const tilesHtml = data.timeline.map((year, index) => {
                     const temp = isFahrenheit ? (year.maxTemp * 9/5 + 32).toFixed(1) : year.maxTemp.toFixed(1);
                     const color = getTemperatureColor(year.maxTemp);
+                    const showYear = index === 0 || index === data.timeline.length - 1;
                     return `
                         <div class="weather-tile" style="background-color: ${color}">
-                            ${getWeatherIcon(year.weatherCode)}
+                            <div class="icon">${getWeatherIcon(year.weatherCode)}</div>
                             <div class="tile-tooltip">${year.year}: ${temp}°${isFahrenheit ? 'F' : 'C'}</div>
+                            ${showYear ? `<div class="year-marker ${index === 0 ? 'year-start' : 'year-end'}">${year.year}</div>` : ''}
                         </div>
                     `;
                 }).join('');
 
                 $('.timeline-grid').html(tilesHtml);
 
-                // Calculate and display weather stats
+                // Calculate and display stats
                 const avgTemp = data.timeline.reduce((sum, year) => sum + year.maxTemp, 0) / data.timeline.length;
                 const avgTempDisplay = isFahrenheit ? (avgTemp * 9/5 + 32).toFixed(1) : avgTemp.toFixed(1);
 
@@ -387,16 +427,31 @@
 
                 $('.weather-stats').html(statsHtml);
 
-                // Render forecast
+                // Next year's forecast
+                const nextYear = new Date().getFullYear() + 1;
                 const predictionTemp = isFahrenheit ? 
                     (data.prediction.temperature * 9/5 + 32).toFixed(1) : 
                     data.prediction.temperature.toFixed(1);
 
                 $('.forecast-container').html(`
-                    <div class="forecast-header">Next Birthday Forecast</div>
-                    <div class="forecast-icon">${getWeatherIcon(data.prediction.weatherCode)}</div>
+                    <div class="forecast-header">${nextYear} Birthday Forecast</div>
+                    <div class="weather-icon">${getWeatherIcon(data.prediction.weatherCode)}</div>
                     <div>${predictionTemp}°${isFahrenheit ? 'F' : 'C'}</div>
                 `);
+            }
+
+            function getWeatherIcon(weatherCode) {
+                const weatherIcons = {
+                    0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 
+                    45: '🌫️', 48: '🌫️', 
+                    51: '🌧️', 53: '🌧️', 55: '🌧️', 
+                    61: '🌧️', 63: '🌧️', 65: '🌧️',
+                    71: '🌨️', 73: '🌨️', 75: '🌨️', 
+                    77: '🌨️', 80: '🌧️', 81: '🌧️',
+                    82: '🌧️', 85: '🌨️', 86: '🌨️', 
+                    95: '⛈️', 96: '⛈️', 99: '⛈️'
+                };
+                return weatherIcons[weatherCode] || '❓';
             }
 
             async function checkWeather() {
@@ -406,7 +461,6 @@
                 const month = $('#dobMonth').val();
                 const day = $('#dobDay').val();
                 const date = `${year}-${month}-${day}`;
-                const mode = $('.mode-button.active').data('mode');
                 const formattedDate = new Date(date).toLocaleDateString('en-US', {
                     month: 'long',
                     day: 'numeric',
@@ -417,57 +471,59 @@
                 $('.timeline-grid, .weather-stats, .forecast-container').empty();
 
                 try {
-                    // Get current day weather
-                    const weatherResponse = await $.ajax({
-                        url: "/weather",
-                        data: {
-                            latitude: selectedCity.latitude,
-                            longitude: selectedCity.longitude,
-                            date: date
-                        }
-                    });
+                    const [weatherResponse, timelineResponse] = await Promise.all([
+                        $.ajax({
+                            url: "/weather",
+                            data: {
+                                latitude: selectedCity.latitude,
+                                longitude: selectedCity.longitude,
+                                date: date
+                            }
+                        }),
+                        $.ajax({
+                            url: "/weather/timeline",
+                            data: {
+                                latitude: selectedCity.latitude,
+                                longitude: selectedCity.longitude,
+                                month: month,
+                                day: day,
+                                startYear: Math.max(1940, year - 10),
+                                endYear: new Date().getFullYear()
+                            }
+                        })
+                    ]);
 
-                    // Get historical timeline
-                    const timelineResponse = await $.ajax({
-                        url: "/weather/timeline",
-                        data: {
-                            latitude: selectedCity.latitude,
-                            longitude: selectedCity.longitude,
-                            month: month,
-                            day: day,
-                            startYear: Math.max(1940, year - 10),
-                            endYear: new Date().getFullYear()
-                        }
-                    });
-
-                    if (weatherResponse.daily && weatherResponse.daily.temperature_2m_max) {
+                    if (weatherResponse.daily?.temperature_2m_max) {
                         const maxTemp = isFahrenheit ? 
                             (weatherResponse.daily.temperature_2m_max[0] * 9/5 + 32).toFixed(1) : 
                             weatherResponse.daily.temperature_2m_max[0].toFixed(1);
                         const unit = isFahrenheit ? '°F' : '°C';
+                        const precipitation = weatherResponse.daily.precipitation_sum[0];
 
                         // Birthday Weather Section
                         $('.weather-content').html(`
                             <div style="text-align: center">
-                                <div style="font-size: 1.5em; margin-bottom: 10px;">${getWeatherIcon(weatherResponse.daily.weathercode[0])}</div>
-                                <div style="font-size: 1.2em;">${maxTemp}${unit}</div>
+                                <div class="weather-icon">${getWeatherIcon(weatherResponse.daily.weathercode[0])}</div>
+                                <div style="font-size: 1.2em; margin-bottom: 10px;">${maxTemp}${unit}</div>
+                                <div>Precipitation: ${precipitation}mm</div>
                             </div>
                         `);
 
-                        // Horoscope Section
-                        if (weatherResponse.horoscope) {
-                            $('.horoscope-content').html(
-                                weatherResponse.horoscope.traits
-                                    .map(trait => `<div class="personality-trait">${trait}</div>`)
-                                    .join('') +
-                                (weatherResponse.horoscope.history ? 
-                                    `<div class="personality-trait">${weatherResponse.horoscope.history}</div>` : 
-                                    '')
-                            );
-                        }
+                        // Weather Personality Section
+                        const personality = getHarshPersonalityTrait(
+                            weatherResponse.daily.weathercode[0],
+                            weatherResponse.daily.temperature_2m_max[0],
+                            precipitation
+                        );
 
-                        // Render historical timeline
-                        if (timelineResponse && timelineResponse.timeline) {
+                        $('.horoscope-content').html(
+                            personality.traits
+                                .map(trait => `<div class="personality-trait">${trait}</div>`)
+                                .join('')
+                        );
+
+                        // Historical Timeline
+                        if (timelineResponse?.timeline) {
                             renderHistoryTiles(timelineResponse);
                         }
 
@@ -476,8 +532,7 @@
                         setupSharing({
                             date: formattedDate,
                             city: selectedCity.city,
-                            temp: maxTemp + unit,
-                            mode: mode
+                            temp: maxTemp + unit
                         });
                     }
                 } catch (error) {
@@ -489,9 +544,7 @@
             }
 
             function setupSharing(data) {
-                const shareText = data.mode === 'friend' ?
-                    `🎂 On your birthday in ${data.city}, it was ${data.temp}! Check your birthday weather at ${websiteURL}` :
-                    `🌤️ On my birthday in ${data.city}, it was ${data.temp}! Check your birthday weather at ${websiteURL}`;
+                const shareText = `🌤️ On my birthday (${data.date}) in ${data.city}, it was ${data.temp}! Check your birthday weather at ${websiteURL}`;
 
                 $('#shareBtn').off('click').on('click', async () => {
                     if (navigator.share) {
@@ -525,31 +578,25 @@
                 });
             }
 
-            // Initialize date dropdowns and event handlers
-            const monthSelect = $('#dobMonth');
-            const months = ["January", "February", "March", "April", "May", "June", 
-                          "July", "August", "September", "October", "November", "December"];
-            months.forEach((month, i) => {
-                monthSelect.append($('<option></option>')
-                    .val((i + 1).toString().padStart(2, '0'))
-                    .html(month));
-            });
-
-            const daySelect = $('#dobDay');
-            for (let i = 1; i <= 31; i++) {
-                daySelect.append($('<option></option>')
-                    .val(i.toString().padStart(2, '0'))
-                    .html(i));
+            // Initialize date dropdowns
+            var monthSelect = $('#dobMonth');
+            var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            for (var i = 0; i < 12; i++) {
+                monthSelect.append($('<option></option>').val((i+1).toString().padStart(2, '0')).html(months[i]));
             }
 
-            const yearSelect = $('#dobYear');
-            const currentYear = new Date().getFullYear();
-            for (let i = currentYear; i >= 1940; i--) {
+            var daySelect = $('#dobDay');
+            for (var i = 1; i <= 31; i++) {
+                daySelect.append($('<option></option>').val(i.toString().padStart(2, '0')).html(i));
+            }
+
+            var yearSelect = $('#dobYear');
+            var currentYear = new Date().getFullYear();
+            for (var i = currentYear; i >= 1940; i--) {
                 yearSelect.append($('<option></option>').val(i).html(i));
             }
             yearSelect.val(2000);
 
-            // City search autocomplete
             $("#searchInput").autocomplete({
                 source: function(request, response) {
                     $.ajax({
@@ -587,16 +634,6 @@
                 $('#getWeather').toggle(hasCity);
             }
 
-            // Event handlers
-            $('.mode-button').click(function() {
-                $('.mode-button').removeClass('active');
-                $(this).addClass('active');
-                const mode = $(this).data('mode');
-                $("#searchInput").attr('placeholder', 
-                    mode === 'friend' ? "Enter friend's birthplace" : "Enter your birthplace"
-                );
-            });
-
             $('#dobDay, #dobMonth, #dobYear').on('change', checkFormCompletion);
             $('#getWeather').on('click', checkWeather);
             $('#tempToggle').on('change', function() {
@@ -604,6 +641,14 @@
                 if($('.weather-content').html()) {
                     checkWeather();
                 }
+            });
+
+            yearSelect.on('focus', function() {
+                var defaultOption = $(this).find('option[value="2000"]');
+                var selectElement = this;
+                setTimeout(function() {
+                    selectElement.scrollTop = defaultOption.offset().top - selectElement.offsetTop - (selectElement.offsetHeight / 2) + (defaultOption.height() / 2);
+                }, 0);
             });
         });
     </script>
