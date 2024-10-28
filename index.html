@@ -39,27 +39,26 @@
             font-size: 1.1em;
         }
 
-        .search-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin: 20px 0;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 10px;
-            width: 100%;
-        }
-
-        #searchInput {
-            flex: 1;
+        #searchInput, select {
+            width: 200px;
             padding: 12px;
             font-size: 16px;
+            margin-right: 10px;
             border: 1px solid #ddd;
             border-radius: 6px;
-            min-width: 0;
             -webkit-appearance: none;
+        }
+
+        .dob-container {
+            display: flex;
+            margin: 20px 0;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .search-container {
+            text-align: center;
+            margin: 20px 0;
         }
 
         .search-button {
@@ -71,24 +70,7 @@
             cursor: pointer;
             font-size: 16px;
             transition: background-color 0.3s;
-            white-space: nowrap;
-        }
-
-        .dob-container {
-            display: flex;
-            margin: 20px 0;
-            justify-content: center;
-            gap: 15px;
-        }
-
-        select {
-            padding: 12px;
-            font-size: 16px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            -webkit-appearance: none;
-            background-color: white;
-            min-width: 100px;
+            display: none;
         }
 
         .switch {
@@ -175,11 +157,28 @@
 
         .timeline-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
-            gap: 5px;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 3px;
             position: relative;
             padding: 10px 0;
             margin-top: 25px;
+        }
+
+        .year-marker {
+            font-size: 0.8em;
+            color: #666;
+            position: absolute;
+        }
+
+        .year-start {
+            left: 0;
+            top: -20px;
+        }
+
+        .year-end {
+            right: -40px;
+            top: 50%;
+            transform: translateY(-50%);
         }
 
         .weather-tile {
@@ -191,11 +190,10 @@
             justify-content: center;
             position: relative;
             cursor: pointer;
-            min-height: 45px;
         }
 
         .weather-tile .icon {
-            font-size: 20px;
+            font-size: 18px;
             line-height: 1;
         }
 
@@ -264,7 +262,7 @@
             100% { transform: translateY(0px); }
         }
 
-        .weather-twin {
+        .weather-soulmate {
             background: white;
             padding: 20px;
             border-radius: 8px;
@@ -272,55 +270,97 @@
             margin-top: 20px;
         }
 
-        .twin-visualization {
+        .soulmate-visual {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            margin: 20px 0;
             gap: 20px;
-            padding: 20px;
-            background: linear-gradient(135deg, #e0f7fa 0%, #e8eaf6 100%);
-            border-radius: 8px;
+            padding: 20px 0;
         }
 
-        .twin-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        .temp-scale {
             flex: 1;
-            max-width: 300px;
+            padding: 20px 0;
+            position: relative;
         }
 
-        .twin-card .weather-icon {
-            font-size: 2.5em;
-            margin: 10px 0;
+        .temp-band {
+            height: 20px;
+            border-radius: 10px;
+            position: relative;
+            margin: 20px 0;
+            overflow: hidden;
         }
 
-        .twin-connector {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            color: #2c3e50;
+        .match-zone {
+            position: absolute;
+            width: 10px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            top: -5px;
         }
 
-        .twin-match-score {
-            font-size: 1.2em;
+        .temp-label {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
             font-weight: bold;
             color: #2c3e50;
-            padding: 5px 15px;
-            background: #fff;
-            border-radius: 20px;
+            background: white;
+            padding: 2px 8px;
+            border-radius: 12px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        .match-details {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 6px;
+        .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .soulmate-compass {
+            width: 150px;
+            height: 150px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .compass-labels {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .compass-label {
+            position: absolute;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .compass-ring {
+            fill: none;
+            stroke-width: 8;
+        }
+
+        .compass-needle {
+            transform-origin: center;
+            transition: transform 0.5s ease-out;
+        }
+
+        @media (max-width: 600px) {
+            .soulmate-visual {
+                flex-direction: column;
+            }
+            
+            .soulmate-compass {
+                margin-top: 20px;
+            }
         }
 
         .toast {
@@ -350,51 +390,6 @@
             min-width: 200px;
             transition: background-color 0.3s;
         }
-
-        @media (max-width: 600px) {
-            .results-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .weather-stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .timeline-grid {
-                grid-template-columns: repeat(6, 1fr);
-            }
-
-            .weather-tile {
-                min-height: 50px;
-            }
-
-            .weather-tile .icon {
-                font-size: 22px;
-            }
-
-            .search-wrapper {
-                padding: 0 10px;
-            }
-
-            select {
-                min-width: 80px;
-            }
-
-            .twin-visualization {
-                flex-direction: column;
-                padding: 15px;
-            }
-
-            .twin-card {
-                width: 100%;
-                max-width: none;
-            }
-
-            .twin-connector {
-                flex-direction: row;
-                margin: 10px 0;
-            }
-        }
     </style>
 </head>
 <body>
@@ -409,11 +404,9 @@
         <select id="dobYear"></select>
     </div>
 
-    <div class="search-wrapper">
-        <div class="input-group">
-            <input type="text" id="searchInput" placeholder="Enter birthplace">
-            <button id="getWeather" class="search-button" style="display: none;">Get Weather</button>
-        </div>
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Enter birthplace">
+        <button id="getWeather" class="search-button">Get Weather</button>
     </div>
 
     <div class="temp-toggle" style="text-align: center; margin: 15px 0;">
@@ -442,27 +435,30 @@
         <div class="forecast-container"></div>
     </div>
 
-    <div class="weather-twin">
-        <h3 class="section-header">Your Birthday Weather Twin</h3>
-        <div class="twin-visualization">
-            <div class="twin-card your-weather">
-                <h4>Your Birthday</h4>
-                <div class="weather-icon"></div>
-                <div class="date"></div>
-                <div class="temp"></div>
+    <div class="weather-soulmate">
+        <h3 class="section-header">Your Weather Match</h3>
+        <div class="soulmate-visual">
+            <div class="temp-scale">
+                <div class="temp-band">
+                    <div class="match-zone"></div>
+                </div>
+                <div class="scale-labels"></div>
             </div>
-            <div class="twin-connector">
-                <div class="twin-match-score">98% Match!</div>
-                <i class="fas fa-equals"></i>
-            </div>
-            <div class="twin-card twin-weather">
-                <h4>Your Weather Twin</h4>
-                <div class="weather-icon"></div>
-                <div class="date"></div>
-                <div class="temp"></div>
+            <div class="soulmate-compass">
+                <svg viewBox="0 0 200 200">
+                    <defs>
+                        <linearGradient id="tempGradient" gradientTransform="rotate(90)">
+                            <stop offset="0%" stop-color="#87CEEB"/>
+                            <stop offset="50%" stop-color="#FFD700"/>
+                            <stop offset="100%" stop-color="#FF4500"/>
+                        </linearGradient>
+                    </defs>
+                    <circle class="compass-ring" cx="100" cy="100" r="90" stroke="url(#tempGradient)"/>
+                    <path class="compass-needle" d="M100,20 L95,100 L100,180 L105,100 Z" fill="#2c3e50"/>
+                    <circle cx="100" cy="100" r="5" fill="#2c3e50"/>
+                </svg>
             </div>
         </div>
-        <div class="match-details"></div>
     </div>
 
     <div id="shareContainer" style="display: none; text-align: center; margin-top: 20px;">
@@ -482,95 +478,6 @@
             let selectedCity = null;
             let isFahrenheit = true;
 
-            function findWeatherTwin(birthTemp, weatherCode, precipitation) {
-                // Simulated weather twin data - in reality, this would come from your backend
-                const twinDate = new Date();
-                twinDate.setMonth(Math.floor(Math.random() * 12));
-                twinDate.setDate(Math.floor(Math.random() * 28) + 1);
-                
-                const tempVariation = (Math.random() * 0.4) - 0.2; // ±0.2°C variation
-                const twinTemp = birthTemp + tempVariation;
-
-                const matchScore = 100 - (Math.abs(tempVariation) * 100);
-
-                // Update visualization
-                $('.your-weather .date').text(formatDate($('#dobMonth').val(), $('#dobDay').val(), $('#dobYear').val()));
-                $('.your-weather .temp').text(`${formatTemp(birthTemp)}°${isFahrenheit ? 'F' : 'C'}`);
-                $('.your-weather .weather-icon').html(getWeatherIcon(weatherCode));
-
-                $('.twin-weather .date').text(formatDate(
-                    (twinDate.getMonth() + 1).toString().padStart(2, '0'),
-                    twinDate.getDate().toString().padStart(2, '0'),
-                    twinDate.getFullYear()
-                ));
-                $('.twin-weather .temp').text(`${formatTemp(twinTemp)}°${isFahrenheit ? 'F' : 'C'}`);
-                $('.twin-weather .weather-icon').html(getWeatherIcon(weatherCode));
-
-                $('.twin-match-score').text(`${matchScore.toFixed(0)}% Match!`);
-
-                const matchExplanation = getMatchExplanation(matchScore);
-                $('.match-details').html(`
-                    <p>${matchExplanation}</p>
-                    <p>Your weather twin experienced almost identical conditions, including:</p>
-                    <ul style="margin-top: 10px;">
-                        <li>Temperature within 0.2°${isFahrenheit ? 'F' : 'C'}</li>
-                        <li>Same weather conditions (${getWeatherDescription(weatherCode)})</li>
-                        <li>Similar precipitation (${precipitation}mm)</li>
-                    </ul>
-                `);
-            }
-
-            function getMatchExplanation(score) {
-                if (score >= 95) return "You've found your perfect weather twin! The conditions are remarkably similar.";
-                if (score >= 90) return "This is an exceptionally close weather match!";
-                if (score >= 85) return "The weather conditions are very similar.";
-                return "These weather conditions share many common elements.";
-            }
-
-            function formatDate(month, day, year) {
-                const date = new Date(year, month - 1, day);
-                return date.toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric'
-                });
-            }
-
-            function formatTemp(temp) {
-                const tempValue = isFahrenheit ? (temp * 9/5 + 32) : temp;
-                return tempValue.toFixed(1);
-            }
-
-            function getWeatherDescription(code) {
-                const descriptions = {
-                    0: 'Clear skies',
-                    1: 'Mostly clear',
-                    2: 'Partly cloudy',
-                    3: 'Overcast',
-                    45: 'Foggy',
-                    48: 'Freezing fog',
-                    51: 'Light drizzle',
-                    53: 'Moderate drizzle',
-                    55: 'Heavy drizzle',
-                    61: 'Light rain',
-                    63: 'Moderate rain',
-                    65: 'Heavy rain',
-                    71: 'Light snow',
-                    73: 'Moderate snow',
-                    75: 'Heavy snow',
-                    77: 'Snow grains',
-                    80: 'Light showers',
-                    81: 'Moderate showers',
-                    82: 'Violent showers',
-                    85: 'Light snow showers',
-                    86: 'Heavy snow showers',
-                    95: 'Thunderstorm',
-                    96: 'Thunderstorm with hail',
-                    99: 'Severe thunderstorm'
-                };
-                return descriptions[code] || 'Unknown weather';
-            }
-
             function getTemperatureColor(temp) {
                 if (temp >= 40) return '#8B0000';      // Scorching
                 if (temp >= 35) return '#FF0000';      // Very Hot
@@ -582,6 +489,32 @@
                 if (temp >= 5) return '#0000FF';       // Cold
                 if (temp >= 0) return '#00008B';       // Very Cold
                 return '#800080';                      // Freezing
+            }
+
+            function updateWeatherSoulmate(birthTemp) {
+                const range = 5; // ±5 degrees for soulmate match
+                const minTemp = birthTemp - range;
+                const maxTemp = birthTemp + range;
+                
+                // Calculate the percentage position for the match zone
+                const position = ((birthTemp + 10) / 60) * 100; // Normalize temp to 0-100%
+                
+                // Update temperature band
+                $('.temp-band').css('background', 
+                    'linear-gradient(to right, #87CEEB, #90EE90, #FFD700, #FFA500, #FF4500)');
+                $('.match-zone').css('left', `${position}%`);
+                
+                // Update scale labels
+                $('.scale-labels').html(`
+                    <span>Cold</span>
+                    <span>Perfect Match</span>
+                    <span>Hot</span>
+                `);
+                $('.temp-label').text(`${birthTemp}°${isFahrenheit ? 'F' : 'C'}`);
+                
+                // Update compass
+                const angle = -45 + ((birthTemp + 10) / 60) * 270; // Convert temp to angle
+                $('.compass-needle').css('transform', `rotate(${angle}deg)`);
             }
 
             function getHarshPersonalityTrait(weatherCode, maxTemp, precipitation) {
@@ -693,6 +626,7 @@
 
                 $('.weather-stats').html(statsHtml);
 
+                // Calculate next birthday forecast
                 const today = new Date();
                 const birthdayMonth = parseInt($('#dobMonth').val()) - 1;
                 const birthdayDay = parseInt($('#dobDay').val());
@@ -765,6 +699,7 @@
                         const unit = isFahrenheit ? '°F' : '°C';
                         const precipitation = weatherResponse.daily.precipitation_sum[0];
 
+                        // Birthday Weather Section
                         $('.weather-content').html(`
                             <div style="text-align: center">
                                 <div class="weather-icon">${getWeatherIcon(weatherResponse.daily.weathercode[0])}</div>
@@ -773,6 +708,7 @@
                             </div>
                         `);
 
+                        // Weather Personality Section
                         const personality = getHarshPersonalityTrait(
                             weatherResponse.daily.weathercode[0],
                             weatherResponse.daily.temperature_2m_max[0],
@@ -785,17 +721,15 @@
                                 .join('')
                         );
 
+                        // Update Weather Soulmate Visualization
+                        updateWeatherSoulmate(weatherResponse.daily.temperature_2m_max[0]);
+
+                        // Historical Timeline
                         if (timelineResponse?.timeline) {
                             renderHistoryTiles(timelineResponse);
                         }
 
-                        // Find and display weather twin
-                        findWeatherTwin(
-                            weatherResponse.daily.temperature_2m_max[0],
-                            weatherResponse.daily.weathercode[0],
-                            precipitation
-                        );
-
+                        // Show share button
                         $('#shareContainer').show();
                         setupSharing({
                             date: formattedDate,
