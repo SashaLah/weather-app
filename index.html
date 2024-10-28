@@ -16,6 +16,7 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
@@ -39,26 +40,27 @@
             font-size: 1.1em;
         }
 
-        #searchInput, select {
-            width: 200px;
+        .search-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        #searchInput {
+            flex: 1;
             padding: 12px;
             font-size: 16px;
-            margin-right: 10px;
             border: 1px solid #ddd;
             border-radius: 6px;
+            min-width: 0;
             -webkit-appearance: none;
-        }
-
-        .dob-container {
-            display: flex;
-            margin: 20px 0;
-            justify-content: center;
-            gap: 15px;
-        }
-
-        .search-container {
-            text-align: center;
-            margin: 20px 0;
         }
 
         .search-button {
@@ -70,7 +72,24 @@
             cursor: pointer;
             font-size: 16px;
             transition: background-color 0.3s;
-            display: none;
+            white-space: nowrap;
+        }
+
+        .dob-container {
+            display: flex;
+            margin: 20px 0;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        select {
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            -webkit-appearance: none;
+            background-color: white;
+            min-width: 100px;
         }
 
         .switch {
@@ -164,23 +183,6 @@
             margin-top: 25px;
         }
 
-        .year-marker {
-            font-size: 0.8em;
-            color: #666;
-            position: absolute;
-        }
-
-        .year-start {
-            left: 0;
-            top: -20px;
-        }
-
-        .year-end {
-            right: -40px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
         .weather-tile {
             aspect-ratio: 1;
             width: 100%;
@@ -190,6 +192,7 @@
             justify-content: center;
             position: relative;
             cursor: pointer;
+            min-height: 30px;
         }
 
         .weather-tile .icon {
@@ -262,7 +265,7 @@
             100% { transform: translateY(0px); }
         }
 
-        .weather-soulmate {
+        .weather-match {
             background: white;
             padding: 20px;
             border-radius: 8px;
@@ -270,97 +273,18 @@
             margin-top: 20px;
         }
 
-        .soulmate-visual {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 20px;
-            padding: 20px 0;
-        }
-
-        .temp-scale {
-            flex: 1;
-            padding: 20px 0;
-            position: relative;
-        }
-
-        .temp-band {
-            height: 20px;
-            border-radius: 10px;
-            position: relative;
-            margin: 20px 0;
-            overflow: hidden;
-        }
-
-        .match-zone {
-            position: absolute;
-            width: 10px;
-            height: 30px;
-            background: rgba(255, 255, 255, 0.9);
-            transform: translateX(-50%);
-            box-shadow: 0 0 10px rgba(0,0,0,0.2);
-            top: -5px;
-        }
-
-        .temp-label {
-            position: absolute;
-            top: -25px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-weight: bold;
-            color: #2c3e50;
-            background: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .scale-labels {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-            color: #666;
-            font-size: 0.9em;
-        }
-
-        .soulmate-compass {
-            width: 150px;
-            height: 150px;
-            flex-shrink: 0;
-            position: relative;
-        }
-
-        .compass-labels {
-            position: absolute;
+        #matchMap {
+            height: 300px;
             width: 100%;
-            height: 100%;
-            pointer-events: none;
+            border-radius: 8px;
+            margin-top: 15px;
         }
 
-        .compass-label {
-            position: absolute;
-            font-size: 12px;
-            color: #666;
-        }
-
-        .compass-ring {
-            fill: none;
-            stroke-width: 8;
-        }
-
-        .compass-needle {
-            transform-origin: center;
-            transition: transform 0.5s ease-out;
-        }
-
-        @media (max-width: 600px) {
-            .soulmate-visual {
-                flex-direction: column;
-            }
-            
-            .soulmate-compass {
-                margin-top: 20px;
-            }
+        .match-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
         }
 
         .toast {
@@ -390,6 +314,32 @@
             min-width: 200px;
             transition: background-color 0.3s;
         }
+
+        @media (max-width: 600px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .weather-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .weather-tile {
+                min-height: 40px;
+            }
+
+            .weather-tile .icon {
+                font-size: 20px;
+            }
+
+            .search-wrapper {
+                padding: 0 10px;
+            }
+
+            select {
+                min-width: 80px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -404,9 +354,11 @@
         <select id="dobYear"></select>
     </div>
 
-    <div class="search-container">
-        <input type="text" id="searchInput" placeholder="Enter birthplace">
-        <button id="getWeather" class="search-button">Get Weather</button>
+    <div class="search-wrapper">
+        <div class="input-group">
+            <input type="text" id="searchInput" placeholder="Enter birthplace">
+            <button id="getWeather" class="search-button" style="display: none;">Get Weather</button>
+        </div>
     </div>
 
     <div class="temp-toggle" style="text-align: center; margin: 15px 0;">
@@ -435,30 +387,10 @@
         <div class="forecast-container"></div>
     </div>
 
-    <div class="weather-soulmate">
-        <h3 class="section-header">Your Weather Match</h3>
-        <div class="soulmate-visual">
-            <div class="temp-scale">
-                <div class="temp-band">
-                    <div class="match-zone"></div>
-                </div>
-                <div class="scale-labels"></div>
-            </div>
-            <div class="soulmate-compass">
-                <svg viewBox="0 0 200 200">
-                    <defs>
-                        <linearGradient id="tempGradient" gradientTransform="rotate(90)">
-                            <stop offset="0%" stop-color="#87CEEB"/>
-                            <stop offset="50%" stop-color="#FFD700"/>
-                            <stop offset="100%" stop-color="#FF4500"/>
-                        </linearGradient>
-                    </defs>
-                    <circle class="compass-ring" cx="100" cy="100" r="90" stroke="url(#tempGradient)"/>
-                    <path class="compass-needle" d="M100,20 L95,100 L100,180 L105,100 Z" fill="#2c3e50"/>
-                    <circle cx="100" cy="100" r="5" fill="#2c3e50"/>
-                </svg>
-            </div>
-        </div>
+    <div class="weather-match">
+        <h3 class="section-header">Your Weather Soulmate Location</h3>
+        <div id="matchMap"></div>
+        <div class="match-info"></div>
     </div>
 
     <div id="shareContainer" style="display: none; text-align: center; margin-top: 20px;">
@@ -471,12 +403,56 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script>
         const websiteURL = 'www.weatherbirthday.com';
         
         $(document).ready(function() {
             let selectedCity = null;
             let isFahrenheit = true;
+            let map = null;
+            let matchMarkers = [];
+
+            function initMap() {
+                if (map) {
+                    map.remove();
+                }
+                map = L.map('matchMap').setView([20, 0], 2);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+            }
+
+            function findWeatherMatches(birthTemp) {
+                // Clear existing markers
+                matchMarkers.forEach(marker => marker.remove());
+                matchMarkers = [];
+
+                // Sample locations with similar weather (you'd need to replace this with real data)
+                const matches = [
+                    { lat: 40.7128, lng: -74.0060, city: "New York", temp: birthTemp + 0.5 },
+                    { lat: 48.8566, lng: 2.3522, city: "Paris", temp: birthTemp - 0.2 },
+                    { lat: 35.6762, lng: 139.6503, city: "Tokyo", temp: birthTemp + 0.3 },
+                    { lat: -33.8688, lng: 151.2093, city: "Sydney", temp: birthTemp - 0.1 }
+                ];
+
+                matches.forEach(location => {
+                    const marker = L.marker([location.lat, location.lng])
+                        .bindPopup(`${location.city}<br>${location.temp}°${isFahrenheit ? 'F' : 'C'}`);
+                    marker.addTo(map);
+                    matchMarkers.push(marker);
+                });
+
+                // Update match info
+                $('.match-info').html(`
+                    <p>Found ${matches.length} locations with similar weather patterns to your birthday!</p>
+                    <p>Click the markers to see details about each match.</p>
+                `);
+
+                // Fit map to show all markers
+                const group = new L.featureGroup(matchMarkers);
+                map.fitBounds(group.getBounds(), { padding: [30, 30] });
+            }
 
             function getTemperatureColor(temp) {
                 if (temp >= 40) return '#8B0000';      // Scorching
@@ -489,32 +465,6 @@
                 if (temp >= 5) return '#0000FF';       // Cold
                 if (temp >= 0) return '#00008B';       // Very Cold
                 return '#800080';                      // Freezing
-            }
-
-            function updateWeatherSoulmate(birthTemp) {
-                const range = 5; // ±5 degrees for soulmate match
-                const minTemp = birthTemp - range;
-                const maxTemp = birthTemp + range;
-                
-                // Calculate the percentage position for the match zone
-                const position = ((birthTemp + 10) / 60) * 100; // Normalize temp to 0-100%
-                
-                // Update temperature band
-                $('.temp-band').css('background', 
-                    'linear-gradient(to right, #87CEEB, #90EE90, #FFD700, #FFA500, #FF4500)');
-                $('.match-zone').css('left', `${position}%`);
-                
-                // Update scale labels
-                $('.scale-labels').html(`
-                    <span>Cold</span>
-                    <span>Perfect Match</span>
-                    <span>Hot</span>
-                `);
-                $('.temp-label').text(`${birthTemp}°${isFahrenheit ? 'F' : 'C'}`);
-                
-                // Update compass
-                const angle = -45 + ((birthTemp + 10) / 60) * 270; // Convert temp to angle
-                $('.compass-needle').css('transform', `rotate(${angle}deg)`);
             }
 
             function getHarshPersonalityTrait(weatherCode, maxTemp, precipitation) {
@@ -626,7 +576,6 @@
 
                 $('.weather-stats').html(statsHtml);
 
-                // Calculate next birthday forecast
                 const today = new Date();
                 const birthdayMonth = parseInt($('#dobMonth').val()) - 1;
                 const birthdayDay = parseInt($('#dobDay').val());
@@ -699,7 +648,6 @@
                         const unit = isFahrenheit ? '°F' : '°C';
                         const precipitation = weatherResponse.daily.precipitation_sum[0];
 
-                        // Birthday Weather Section
                         $('.weather-content').html(`
                             <div style="text-align: center">
                                 <div class="weather-icon">${getWeatherIcon(weatherResponse.daily.weathercode[0])}</div>
@@ -708,7 +656,6 @@
                             </div>
                         `);
 
-                        // Weather Personality Section
                         const personality = getHarshPersonalityTrait(
                             weatherResponse.daily.weathercode[0],
                             weatherResponse.daily.temperature_2m_max[0],
@@ -721,15 +668,14 @@
                                 .join('')
                         );
 
-                        // Update Weather Soulmate Visualization
-                        updateWeatherSoulmate(weatherResponse.daily.temperature_2m_max[0]);
-
-                        // Historical Timeline
                         if (timelineResponse?.timeline) {
                             renderHistoryTiles(timelineResponse);
                         }
 
-                        // Show share button
+                        // Initialize map and find weather matches
+                        initMap();
+                        findWeatherMatches(weatherResponse.daily.temperature_2m_max[0]);
+
                         $('#shareContainer').show();
                         setupSharing({
                             date: formattedDate,
@@ -852,6 +798,9 @@
                     selectElement.scrollTop = defaultOption.offset().top - selectElement.offsetTop - (selectElement.offsetHeight / 2) + (defaultOption.height() / 2);
                 }, 0);
             });
+
+            // Initialize the map on page load
+            initMap();
         });
     </script>
 </body>
