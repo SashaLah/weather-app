@@ -75,7 +75,7 @@
 
         .results-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(2, 1fr);
             gap: 20px;
             margin-top: 20px;
         }
@@ -112,19 +112,20 @@
         }
 
         .year-marker {
-            position: absolute;
             font-size: 0.8em;
             color: #666;
+            position: absolute;
         }
 
         .year-start {
             left: 0;
-            bottom: -20px;
+            top: -20px;
         }
 
         .year-end {
-            right: 0;
-            bottom: -20px;
+            right: -40px;
+            top: 50%;
+            transform: translateY(-50%);
         }
 
         .weather-tile {
@@ -139,7 +140,7 @@
         }
 
         .weather-tile .icon {
-            font-size: 14px;
+            font-size: 18px;  /* Increased from 14px */
             line-height: 1;
         }
 
@@ -190,15 +191,28 @@
 
         .forecast-container {
             background: linear-gradient(135deg, #e0f7fa 0%, #e8eaf6 100%);
-            padding: 15px;
+            padding: 20px;
             border-radius: 8px;
             text-align: center;
             margin-top: 20px;
         }
 
+        .forecast-header {
+            font-size: 1.3em;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
         .weather-icon {
-            font-size: 2.5em;
-            margin: 10px 0;
+            font-size: 3em;
+            margin: 15px 0;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
         }
 
         .personality-trait {
@@ -206,6 +220,25 @@
             margin: 5px 0;
             border-radius: 4px;
             background: #f8f9fa;
+        }
+
+        .weather-soulmate {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%);
+            padding: 20px;
+            border-radius: 8px;
+            color: white;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .soulmate-icon {
+            font-size: 2.5em;
+            margin: 10px 0;
+        }
+
+        .soulmate-description {
+            margin: 15px 0;
+            line-height: 1.6;
         }
 
         @media (max-width: 768px) {
@@ -287,10 +320,15 @@
     </div>
 
     <div class="timeline-container">
-        <h3 class="section-header">Historical Weather Pattern</h3>
+        <h3 class="section-header">Your Past Birthday Weather By Year</h3>
         <div class="timeline-grid"></div>
         <div class="weather-stats"></div>
         <div class="forecast-container"></div>
+    </div>
+
+    <div class="weather-soulmate">
+        <h3 class="section-header">Your Weather Soulmate</h3>
+        <div class="soulmate-content"></div>
     </div>
 
     <div id="shareContainer" style="display: none; text-align: center; margin-top: 20px;">
@@ -322,6 +360,51 @@
                 if (temp >= 5) return '#0000FF';       // Cold
                 if (temp >= 0) return '#00008B';       // Very Cold
                 return '#800080';                      // Freezing
+            }
+
+            function findWeatherSoulmate(birthTemp, birthWeather) {
+                // Define weather combinations that are considered compatible
+                const weatherPairs = {
+                    sunny: ['cloudy', 'mild'],
+                    rainy: ['sunny', 'warm'],
+                    snowy: ['mild', 'cloudy'],
+                    stormy: ['calm', 'mild'],
+                    hot: ['cool', 'mild'],
+                    cold: ['warm', 'mild']
+                };
+
+                // Temperature range for soulmate (within 5-10 degrees of birth temperature)
+                const soulmateTemp = birthTemp + (Math.random() * 10 - 5);
+                
+                // Get season based on temperature
+                function getSeason(temp) {
+                    if (temp > 25) return 'summer';
+                    if (temp < 10) return 'winter';
+                    if (temp >= 10 && temp < 18) return 'spring';
+                    return 'autumn';
+                }
+
+                const birthSeason = getSeason(birthTemp);
+                
+                // Generate soulmate description
+                let description = '';
+                if (birthWeather < 3) { // Sunny
+                    description = "Your weather soulmate was born on a mild, cloudy day. They bring balance to your sunny nature with their thoughtful calm.";
+                } else if (birthWeather >= 51 && birthWeather <= 65) { // Rainy
+                    description = "Your weather soulmate was born on a warm, clear day. They help you see the bright side during your emotional storms.";
+                } else if (birthWeather >= 71 && birthWeather <= 77) { // Snowy
+                    description = "Your weather soulmate was born during a gentle spring shower. They melt your icy exterior with their warmth.";
+                } else if (birthWeather >= 95) { // Stormy
+                    description = "Your weather soulmate was born on a serene autumn day. They calm your stormy heart with their peaceful presence.";
+                } else {
+                    description = "Your weather soulmate was born in a different season, bringing complementary energy to your life.";
+                }
+
+                return {
+                    temperature: soulmateTemp,
+                    description: description,
+                    season: getSeason(soulmateTemp)
+                };
             }
 
             function getHarshPersonalityTrait(weatherCode, maxTemp, precipitation) {
@@ -397,12 +480,12 @@
                 const tilesHtml = data.timeline.map((year, index) => {
                     const temp = isFahrenheit ? (year.maxTemp * 9/5 + 32).toFixed(1) : year.maxTemp.toFixed(1);
                     const color = getTemperatureColor(year.maxTemp);
-                    const showYear = index === 0 || index === data.timeline.length - 1;
                     return `
                         <div class="weather-tile" style="background-color: ${color}">
                             <div class="icon">${getWeatherIcon(year.weatherCode)}</div>
                             <div class="tile-tooltip">${year.year}: ${temp}°${isFahrenheit ? 'F' : 'C'}</div>
-                            ${showYear ? `<div class="year-marker ${index === 0 ? 'year-start' : 'year-end'}">${year.year}</div>` : ''}
+                            ${index === 0 ? `<div class="year-marker year-start">${year.year}</div>` : ''}
+                            ${index === data.timeline.length - 1 ? `<div class="year-marker year-end">${year.year}</div>` : ''}
                         </div>
                     `;
                 }).join('');
@@ -427,16 +510,32 @@
 
                 $('.weather-stats').html(statsHtml);
 
-                // Next year's forecast
-                const nextYear = new Date().getFullYear() + 1;
+                // Next birthday's forecast
+                const today = new Date();
+                const nextBirthdayYear = new Date(
+                    today.getFullYear(),
+                    parseInt($('#dobMonth').val()) - 1,
+                    parseInt($('#dobDay').val())
+                );
+                
+                if (nextBirthdayYear < today) {
+                    nextBirthdayYear.setFullYear(today.getFullYear() + 1);
+                }
+
+                const formattedNextBirthday = nextBirthdayYear.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
                 const predictionTemp = isFahrenheit ? 
                     (data.prediction.temperature * 9/5 + 32).toFixed(1) : 
                     data.prediction.temperature.toFixed(1);
 
                 $('.forecast-container').html(`
-                    <div class="forecast-header">${nextYear} Birthday Forecast</div>
+                    <div class="forecast-header">Your Next Birthday Forecast: ${formattedNextBirthday}</div>
                     <div class="weather-icon">${getWeatherIcon(data.prediction.weatherCode)}</div>
-                    <div>${predictionTemp}°${isFahrenheit ? 'F' : 'C'}</div>
+                    <div style="font-size: 1.2em;">${predictionTemp}°${isFahrenheit ? 'F' : 'C'}</div>
                 `);
             }
 
@@ -467,7 +566,7 @@
                     year: 'numeric'
                 });
 
-                $('.weather-content, .horoscope-content').html('Loading...');
+                $('.weather-content, .horoscope-content, .soulmate-content').html('Loading...');
                 $('.timeline-grid, .weather-stats, .forecast-container').empty();
 
                 try {
@@ -522,6 +621,23 @@
                                 .join('')
                         );
 
+                        // Weather Soulmate Section
+                        const soulmate = findWeatherSoulmate(
+                            weatherResponse.daily.temperature_2m_max[0],
+                            weatherResponse.daily.weathercode[0]
+                        );
+
+                        const soulmateTempDisplay = isFahrenheit ? 
+                            (soulmate.temperature * 9/5 + 32).toFixed(1) : 
+                            soulmate.temperature.toFixed(1);
+
+                        $('.soulmate-content').html(`
+                            <div class="soulmate-icon">❤️</div>
+                            <div class="soulmate-description">${soulmate.description}</div>
+                            <div>Perfect Match Temperature: ${soulmateTempDisplay}${unit}</div>
+                            <div>Season: ${soulmate.season}</div>
+                        `);
+
                         // Historical Timeline
                         if (timelineResponse?.timeline) {
                             renderHistoryTiles(timelineResponse);
@@ -536,7 +652,7 @@
                         });
                     }
                 } catch (error) {
-                    $('.weather-content, .horoscope-content').html(
+                    $('.weather-content, .horoscope-content, .soulmate-content').html(
                         '<p class="error-message">Failed to fetch weather data</p>'
                     );
                     console.error('Weather fetch error:', error);
