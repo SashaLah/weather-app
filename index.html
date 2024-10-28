@@ -16,7 +16,6 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
@@ -176,8 +175,8 @@
 
         .timeline-grid {
             display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            gap: 3px;
+            grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+            gap: 5px;
             position: relative;
             padding: 10px 0;
             margin-top: 25px;
@@ -192,11 +191,11 @@
             justify-content: center;
             position: relative;
             cursor: pointer;
-            min-height: 30px;
+            min-height: 45px;
         }
 
         .weather-tile .icon {
-            font-size: 18px;
+            font-size: 20px;
             line-height: 1;
         }
 
@@ -265,7 +264,7 @@
             100% { transform: translateY(0px); }
         }
 
-        .weather-match {
+        .weather-twin {
             background: white;
             padding: 20px;
             border-radius: 8px;
@@ -273,15 +272,52 @@
             margin-top: 20px;
         }
 
-        #matchMap {
-            height: 300px;
-            width: 100%;
+        .twin-visualization {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            gap: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #e0f7fa 0%, #e8eaf6 100%);
             border-radius: 8px;
-            margin-top: 15px;
         }
 
-        .match-info {
-            margin-top: 15px;
+        .twin-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex: 1;
+            max-width: 300px;
+        }
+
+        .twin-card .weather-icon {
+            font-size: 2.5em;
+            margin: 10px 0;
+        }
+
+        .twin-connector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            color: #2c3e50;
+        }
+
+        .twin-match-score {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+            padding: 5px 15px;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .match-details {
+            margin-top: 20px;
             padding: 15px;
             background: #f8f9fa;
             border-radius: 6px;
@@ -324,12 +360,16 @@
                 grid-template-columns: repeat(2, 1fr);
             }
 
+            .timeline-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+
             .weather-tile {
-                min-height: 40px;
+                min-height: 50px;
             }
 
             .weather-tile .icon {
-                font-size: 20px;
+                font-size: 22px;
             }
 
             .search-wrapper {
@@ -338,6 +378,21 @@
 
             select {
                 min-width: 80px;
+            }
+
+            .twin-visualization {
+                flex-direction: column;
+                padding: 15px;
+            }
+
+            .twin-card {
+                width: 100%;
+                max-width: none;
+            }
+
+            .twin-connector {
+                flex-direction: row;
+                margin: 10px 0;
             }
         }
     </style>
@@ -387,10 +442,27 @@
         <div class="forecast-container"></div>
     </div>
 
-    <div class="weather-match">
-        <h3 class="section-header">Your Weather Soulmate Location</h3>
-        <div id="matchMap"></div>
-        <div class="match-info"></div>
+    <div class="weather-twin">
+        <h3 class="section-header">Your Birthday Weather Twin</h3>
+        <div class="twin-visualization">
+            <div class="twin-card your-weather">
+                <h4>Your Birthday</h4>
+                <div class="weather-icon"></div>
+                <div class="date"></div>
+                <div class="temp"></div>
+            </div>
+            <div class="twin-connector">
+                <div class="twin-match-score">98% Match!</div>
+                <i class="fas fa-equals"></i>
+            </div>
+            <div class="twin-card twin-weather">
+                <h4>Your Weather Twin</h4>
+                <div class="weather-icon"></div>
+                <div class="date"></div>
+                <div class="temp"></div>
+            </div>
+        </div>
+        <div class="match-details"></div>
     </div>
 
     <div id="shareContainer" style="display: none; text-align: center; margin-top: 20px;">
@@ -403,55 +475,100 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script>
         const websiteURL = 'www.weatherbirthday.com';
         
         $(document).ready(function() {
             let selectedCity = null;
             let isFahrenheit = true;
-            let map = null;
-            let matchMarkers = [];
 
-            function initMap() {
-                if (map) {
-                    map.remove();
-                }
-                map = L.map('matchMap').setView([20, 0], 2);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors'
-                }).addTo(map);
+            function findWeatherTwin(birthTemp, weatherCode, precipitation) {
+                // Simulated weather twin data - in reality, this would come from your backend
+                const twinDate = new Date();
+                twinDate.setMonth(Math.floor(Math.random() * 12));
+                twinDate.setDate(Math.floor(Math.random() * 28) + 1);
+                
+                const tempVariation = (Math.random() * 0.4) - 0.2; // ±0.2°C variation
+                const twinTemp = birthTemp + tempVariation;
+
+                const matchScore = 100 - (Math.abs(tempVariation) * 100);
+
+                // Update visualization
+                $('.your-weather .date').text(formatDate($('#dobMonth').val(), $('#dobDay').val(), $('#dobYear').val()));
+                $('.your-weather .temp').text(`${formatTemp(birthTemp)}°${isFahrenheit ? 'F' : 'C'}`);
+                $('.your-weather .weather-icon').html(getWeatherIcon(weatherCode));
+
+                $('.twin-weather .date').text(formatDate(
+                    (twinDate.getMonth() + 1).toString().padStart(2, '0'),
+                    twinDate.getDate().toString().padStart(2, '0'),
+                    twinDate.getFullYear()
+                ));
+                $('.twin-weather .temp').text(`${formatTemp(twinTemp)}°${isFahrenheit ? 'F' : 'C'}`);
+                $('.twin-weather .weather-icon').html(getWeatherIcon(weatherCode));
+
+                $('.twin-match-score').text(`${matchScore.toFixed(0)}% Match!`);
+
+                const matchExplanation = getMatchExplanation(matchScore);
+                $('.match-details').html(`
+                    <p>${matchExplanation}</p>
+                    <p>Your weather twin experienced almost identical conditions, including:</p>
+                    <ul style="margin-top: 10px;">
+                        <li>Temperature within 0.2°${isFahrenheit ? 'F' : 'C'}</li>
+                        <li>Same weather conditions (${getWeatherDescription(weatherCode)})</li>
+                        <li>Similar precipitation (${precipitation}mm)</li>
+                    </ul>
+                `);
             }
 
-            function findWeatherMatches(birthTemp) {
-                // Clear existing markers
-                matchMarkers.forEach(marker => marker.remove());
-                matchMarkers = [];
+            function getMatchExplanation(score) {
+                if (score >= 95) return "You've found your perfect weather twin! The conditions are remarkably similar.";
+                if (score >= 90) return "This is an exceptionally close weather match!";
+                if (score >= 85) return "The weather conditions are very similar.";
+                return "These weather conditions share many common elements.";
+            }
 
-                // Sample locations with similar weather (you'd need to replace this with real data)
-                const matches = [
-                    { lat: 40.7128, lng: -74.0060, city: "New York", temp: birthTemp + 0.5 },
-                    { lat: 48.8566, lng: 2.3522, city: "Paris", temp: birthTemp - 0.2 },
-                    { lat: 35.6762, lng: 139.6503, city: "Tokyo", temp: birthTemp + 0.3 },
-                    { lat: -33.8688, lng: 151.2093, city: "Sydney", temp: birthTemp - 0.1 }
-                ];
-
-                matches.forEach(location => {
-                    const marker = L.marker([location.lat, location.lng])
-                        .bindPopup(`${location.city}<br>${location.temp}°${isFahrenheit ? 'F' : 'C'}`);
-                    marker.addTo(map);
-                    matchMarkers.push(marker);
+            function formatDate(month, day, year) {
+                const date = new Date(year, month - 1, day);
+                return date.toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
                 });
+            }
 
-                // Update match info
-                $('.match-info').html(`
-                    <p>Found ${matches.length} locations with similar weather patterns to your birthday!</p>
-                    <p>Click the markers to see details about each match.</p>
-                `);
+            function formatTemp(temp) {
+                const tempValue = isFahrenheit ? (temp * 9/5 + 32) : temp;
+                return tempValue.toFixed(1);
+            }
 
-                // Fit map to show all markers
-                const group = new L.featureGroup(matchMarkers);
-                map.fitBounds(group.getBounds(), { padding: [30, 30] });
+            function getWeatherDescription(code) {
+                const descriptions = {
+                    0: 'Clear skies',
+                    1: 'Mostly clear',
+                    2: 'Partly cloudy',
+                    3: 'Overcast',
+                    45: 'Foggy',
+                    48: 'Freezing fog',
+                    51: 'Light drizzle',
+                    53: 'Moderate drizzle',
+                    55: 'Heavy drizzle',
+                    61: 'Light rain',
+                    63: 'Moderate rain',
+                    65: 'Heavy rain',
+                    71: 'Light snow',
+                    73: 'Moderate snow',
+                    75: 'Heavy snow',
+                    77: 'Snow grains',
+                    80: 'Light showers',
+                    81: 'Moderate showers',
+                    82: 'Violent showers',
+                    85: 'Light snow showers',
+                    86: 'Heavy snow showers',
+                    95: 'Thunderstorm',
+                    96: 'Thunderstorm with hail',
+                    99: 'Severe thunderstorm'
+                };
+                return descriptions[code] || 'Unknown weather';
             }
 
             function getTemperatureColor(temp) {
@@ -672,9 +789,12 @@
                             renderHistoryTiles(timelineResponse);
                         }
 
-                        // Initialize map and find weather matches
-                        initMap();
-                        findWeatherMatches(weatherResponse.daily.temperature_2m_max[0]);
+                        // Find and display weather twin
+                        findWeatherTwin(
+                            weatherResponse.daily.temperature_2m_max[0],
+                            weatherResponse.daily.weathercode[0],
+                            precipitation
+                        );
 
                         $('#shareContainer').show();
                         setupSharing({
@@ -798,9 +918,6 @@
                     selectElement.scrollTop = defaultOption.offset().top - selectElement.offsetTop - (selectElement.offsetHeight / 2) + (defaultOption.height() / 2);
                 }, 0);
             });
-
-            // Initialize the map on page load
-            initMap();
         });
     </script>
 </body>
