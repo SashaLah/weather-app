@@ -59,6 +59,10 @@
         .search-container {
             text-align: center;
             margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            align-items: center;
         }
 
         .search-button {
@@ -71,6 +75,7 @@
             font-size: 16px;
             transition: background-color 0.3s;
             display: none;
+            height: 45px;
         }
 
         .switch {
@@ -148,7 +153,7 @@
         }
 
         .timeline-container {
-            margin-top: 20px;
+            margin-bottom: 20px;
             background: white;
             padding: 20px;
             border-radius: 8px;
@@ -158,7 +163,7 @@
         .timeline-grid {
             display: grid;
             grid-template-columns: repeat(12, 1fr);
-            gap: 3px;
+            gap: 4px;
             position: relative;
             padding: 10px 0;
             margin-top: 25px;
@@ -190,10 +195,11 @@
             justify-content: center;
             position: relative;
             cursor: pointer;
+            min-height: 35px;
         }
 
         .weather-tile .icon {
-            font-size: 18px;
+            font-size: 20px;
             line-height: 1;
         }
 
@@ -262,107 +268,6 @@
             100% { transform: translateY(0px); }
         }
 
-        .weather-soulmate {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-top: 20px;
-        }
-
-        .soulmate-visual {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 20px;
-            padding: 20px 0;
-        }
-
-        .temp-scale {
-            flex: 1;
-            padding: 20px 0;
-            position: relative;
-        }
-
-        .temp-band {
-            height: 20px;
-            border-radius: 10px;
-            position: relative;
-            margin: 20px 0;
-            overflow: hidden;
-        }
-
-        .match-zone {
-            position: absolute;
-            width: 10px;
-            height: 30px;
-            background: rgba(255, 255, 255, 0.9);
-            transform: translateX(-50%);
-            box-shadow: 0 0 10px rgba(0,0,0,0.2);
-            top: -5px;
-        }
-
-        .temp-label {
-            position: absolute;
-            top: -25px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-weight: bold;
-            color: #2c3e50;
-            background: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .scale-labels {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-            color: #666;
-            font-size: 0.9em;
-        }
-
-        .soulmate-compass {
-            width: 150px;
-            height: 150px;
-            flex-shrink: 0;
-            position: relative;
-        }
-
-        .compass-labels {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-
-        .compass-label {
-            position: absolute;
-            font-size: 12px;
-            color: #666;
-        }
-
-        .compass-ring {
-            fill: none;
-            stroke-width: 8;
-        }
-
-        .compass-needle {
-            transform-origin: center;
-            transition: transform 0.5s ease-out;
-        }
-
-        @media (max-width: 600px) {
-            .soulmate-visual {
-                flex-direction: column;
-            }
-            
-            .soulmate-compass {
-                margin-top: 20px;
-            }
-        }
-
         .toast {
             position: fixed;
             bottom: 20px;
@@ -417,6 +322,13 @@
         <span class="toggle-label">°F / °C</span>
     </div>
 
+    <div class="timeline-container">
+        <h3 class="section-header">Your Past Birthday Weather By Year</h3>
+        <div class="timeline-grid"></div>
+        <div class="weather-stats"></div>
+        <div class="forecast-container"></div>
+    </div>
+
     <div class="results-grid">
         <div class="result-section" id="birthdayWeather">
             <h3 class="section-header">Weather on the day you were born</h3>
@@ -425,39 +337,6 @@
         <div class="result-section" id="horoscope">
             <h3 class="section-header">Your Weather Personality</h3>
             <div class="horoscope-content"></div>
-        </div>
-    </div>
-
-    <div class="timeline-container">
-        <h3 class="section-header">Your Past Birthday Weather By Year</h3>
-        <div class="timeline-grid"></div>
-        <div class="weather-stats"></div>
-        <div class="forecast-container"></div>
-    </div>
-
-    <div class="weather-soulmate">
-        <h3 class="section-header">Your Weather Match</h3>
-        <div class="soulmate-visual">
-            <div class="temp-scale">
-                <div class="temp-band">
-                    <div class="match-zone"></div>
-                </div>
-                <div class="scale-labels"></div>
-            </div>
-            <div class="soulmate-compass">
-                <svg viewBox="0 0 200 200">
-                    <defs>
-                        <linearGradient id="tempGradient" gradientTransform="rotate(90)">
-                            <stop offset="0%" stop-color="#87CEEB"/>
-                            <stop offset="50%" stop-color="#FFD700"/>
-                            <stop offset="100%" stop-color="#FF4500"/>
-                        </linearGradient>
-                    </defs>
-                    <circle class="compass-ring" cx="100" cy="100" r="90" stroke="url(#tempGradient)"/>
-                    <path class="compass-needle" d="M100,20 L95,100 L100,180 L105,100 Z" fill="#2c3e50"/>
-                    <circle cx="100" cy="100" r="5" fill="#2c3e50"/>
-                </svg>
-            </div>
         </div>
     </div>
 
@@ -491,32 +370,6 @@
                 return '#800080';                      // Freezing
             }
 
-            function updateWeatherSoulmate(birthTemp) {
-                const range = 5; // ±5 degrees for soulmate match
-                const minTemp = birthTemp - range;
-                const maxTemp = birthTemp + range;
-                
-                // Calculate the percentage position for the match zone
-                const position = ((birthTemp + 10) / 60) * 100; // Normalize temp to 0-100%
-                
-                // Update temperature band
-                $('.temp-band').css('background', 
-                    'linear-gradient(to right, #87CEEB, #90EE90, #FFD700, #FFA500, #FF4500)');
-                $('.match-zone').css('left', `${position}%`);
-                
-                // Update scale labels
-                $('.scale-labels').html(`
-                    <span>Cold</span>
-                    <span>Perfect Match</span>
-                    <span>Hot</span>
-                `);
-                $('.temp-label').text(`${birthTemp}°${isFahrenheit ? 'F' : 'C'}`);
-                
-                // Update compass
-                const angle = -45 + ((birthTemp + 10) / 60) * 270; // Convert temp to angle
-                $('.compass-needle').css('transform', `rotate(${angle}deg)`);
-            }
-
             function getHarshPersonalityTrait(weatherCode, maxTemp, precipitation) {
                 const traits = {
                     0: {
@@ -533,19 +386,19 @@
                     },
                     3: {
                         positive: "You're deep and thoughtful",
-                        negative: "but you tend to bring down the mood wherever you go"
+                        negative: "but you tend to bring down the mood sometimes"
                     },
                     51: {
                         positive: "You're sensitive to others' feelings",
-                        negative: "but you cry way too easily over everything"
+                        negative: "but you sometimes cry easily over everything"
                     },
                     61: {
                         positive: "You're emotionally available",
-                        negative: "but your constant emotional outbursts are draining"
+                        negative: "but your are prone to emotional outbursts"
                     },
                     65: {
                         positive: "You feel everything deeply",
-                        negative: "but you're a total drama queen"
+                        negative: "but can also be a drama queen"
                     },
                     95: {
                         positive: "You're passionate and intense",
@@ -699,7 +552,6 @@
                         const unit = isFahrenheit ? '°F' : '°C';
                         const precipitation = weatherResponse.daily.precipitation_sum[0];
 
-                        // Birthday Weather Section
                         $('.weather-content').html(`
                             <div style="text-align: center">
                                 <div class="weather-icon">${getWeatherIcon(weatherResponse.daily.weathercode[0])}</div>
@@ -708,7 +560,6 @@
                             </div>
                         `);
 
-                        // Weather Personality Section
                         const personality = getHarshPersonalityTrait(
                             weatherResponse.daily.weathercode[0],
                             weatherResponse.daily.temperature_2m_max[0],
@@ -721,15 +572,10 @@
                                 .join('')
                         );
 
-                        // Update Weather Soulmate Visualization
-                        updateWeatherSoulmate(weatherResponse.daily.temperature_2m_max[0]);
-
-                        // Historical Timeline
                         if (timelineResponse?.timeline) {
                             renderHistoryTiles(timelineResponse);
                         }
 
-                        // Show share button
                         $('#shareContainer').show();
                         setupSharing({
                             date: formattedDate,
