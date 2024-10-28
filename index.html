@@ -18,24 +18,28 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f8f9fa;
             -webkit-font-smoothing: antialiased;
         }
+
         .header {
             text-align: center;
             color: #2c3e50;
             margin-bottom: 20px;
         }
+
         .subtitle {
             color: #666;
             text-align: center;
             margin-bottom: 20px;
             font-size: 1.1em;
         }
+
+        /* Input styles */
         #searchInput, select {
             width: 200px;
             padding: 12px;
@@ -45,23 +49,19 @@
             border-radius: 6px;
             -webkit-appearance: none;
         }
-        #weatherResult {
-            margin-top: 20px;
-            padding: 20px;
-            border-radius: 8px;
-            background-color: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
+
         .dob-container {
             display: flex;
             margin: 20px 0;
             justify-content: center;
             gap: 15px;
         }
+
         .search-container {
             text-align: center;
             margin: 20px 0;
         }
+
         .search-button {
             padding: 12px 25px;
             background-color: #3498db;
@@ -72,61 +72,67 @@
             font-size: 16px;
             transition: background-color 0.3s;
             display: none;
-            -webkit-appearance: none;
         }
-        .toggle-container {
-            margin: 20px 0;
-            text-align: center;
-        }
-        .temp-label {
-            display: inline-block;
-            font-weight: bold;
-            margin: 0 10px;
-            color: #2c3e50;
-        }
-        .weather-icon {
-            font-size: 64px;
-            text-align: center;
-            margin: 20px 0;
-            line-height: 1;
-        }
-        .mode-selector {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .mode-button {
-            padding: 10px 20px;
-            margin: 0 10px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            background-color: #ecf0f1;
-        }
-        .mode-button.active {
-            background-color: #3498db;
-            color: white;
-        }
-        .personality-trait {
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 4px;
-            background: #f8f9fa;
-        }
-        .history-tiles {
+
+        /* Results Grid */
+        .results-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-            gap: 4px;
-            margin: 20px 0;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
         }
+
+        .result-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .section-header {
+            font-size: 1.2em;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        /* Weather Timeline */
+        .timeline-container {
+            margin-top: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 4px;
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .timeline-years {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
         .weather-tile {
             aspect-ratio: 1;
             border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 16px;
             position: relative;
+            cursor: pointer;
         }
+
         .tile-tooltip {
             position: absolute;
             background: rgba(0,0,0,0.8);
@@ -139,40 +145,87 @@
             transform: translateX(-50%);
             white-space: nowrap;
             display: none;
+            z-index: 10;
         }
+
         .weather-tile:hover .tile-tooltip {
             display: block;
         }
-        .weather-summary {
-            display: flex;
-            flex-wrap: wrap;
+
+        /* Stats Section */
+        .weather-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
             gap: 10px;
-            margin: 20px 0;
+            margin-top: 15px;
         }
-        .summary-item {
-            background: #f0f0f0;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 14px;
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            transition: transform 0.2s;
         }
-        .prediction-box {
-            background: #e8f4f8;
+
+        .stat-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .stat-value {
+            font-size: 1.1em;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-top: 4px;
+        }
+
+        /* Forecast Section */
+        .forecast-container {
+            background: linear-gradient(135deg, #e0f7fa 0%, #e8eaf6 100%);
             padding: 15px;
             border-radius: 8px;
-            margin-top: 20px;
             text-align: center;
+            margin-top: 20px;
         }
-        .share-button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 12px 24px;
-            margin: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            min-width: 200px;
+
+        .forecast-header {
+            font-size: 1.1em;
+            color: #2c3e50;
+            margin-bottom: 10px;
         }
+
+        .forecast-icon {
+            font-size: 24px;
+            margin: 10px 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dob-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            #searchInput, select {
+                width: 100%;
+                max-width: 300px;
+                margin: 5px 0;
+            }
+
+            .timeline-grid {
+                grid-template-columns: repeat(8, 1fr);
+            }
+        }
+
         .toast {
             position: fixed;
             bottom: 20px;
@@ -185,20 +238,24 @@
             font-size: 16px;
             display: none;
             z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            .dob-container {
-                flex-direction: column;
-                align-items: center;
-            }
-            #searchInput, select {
-                width: 100%;
-                max-width: 300px;
-                margin: 5px 0;
-            }
+
+        .share-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 12px 24px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            min-width: 200px;
+            transition: background-color 0.3s;
+        }
+
+        .share-button:hover {
+            background-color: #2980b9;
         }
     </style>
 </head>
@@ -223,19 +280,29 @@
         <input type="text" id="searchInput" placeholder="Enter birthplace">
         <button id="getWeather" class="search-button">Get Weather</button>
     </div>
-    
-    <div class="toggle-container">
-        <span class="temp-label">°F</span>
-        <label class="switch">
-            <input type="checkbox" id="tempToggle">
-            <span class="slider"></span>
-        </label>
-        <span class="temp-label">°C</span>
+
+    <div class="results-grid">
+        <div class="result-section" id="birthdayWeather">
+            <h3 class="section-header">Birthday Weather</h3>
+            <div class="weather-content"></div>
+        </div>
+        <div class="result-section" id="horoscope">
+            <h3 class="section-header">Weather Personality</h3>
+            <div class="horoscope-content"></div>
+        </div>
     </div>
 
-    <div id="weatherResult"></div>
-    <div id="historyContainer"></div>
-    
+    <div class="timeline-container">
+        <h3 class="section-header">Historical Weather Pattern</h3>
+        <div class="timeline-years">
+            <span class="year-start"></span>
+            <span class="year-end"></span>
+        </div>
+        <div class="timeline-grid"></div>
+        <div class="weather-stats"></div>
+        <div class="forecast-container"></div>
+    </div>
+
     <div id="shareContainer" style="display: none; text-align: center; margin-top: 20px;">
         <button id="shareBtn" class="share-button">
             <i class="fas fa-share-alt"></i> Share
@@ -253,52 +320,18 @@
             let selectedCity = null;
             let isFahrenheit = true;
 
-            function showToast(message, duration = 3000) {
-                const toast = $('#toast');
-                toast.text(message).fadeIn();
-                setTimeout(() => toast.fadeOut(), duration);
-            }
-
-            $('.mode-button').click(function() {
-                $('.mode-button').removeClass('active');
-                $(this).addClass('active');
-                const mode = $(this).data('mode');
-                updatePlaceholders(mode);
-            });
-
-            function updatePlaceholders(mode) {
-                const searchPlaceholder = mode === 'friend' ? "Enter friend's birthplace" : "Enter your birthplace";
-                $('#searchInput').attr('placeholder', searchPlaceholder);
-            }
-
-            // Initialize date dropdowns
-            var monthSelect = $('#dobMonth');
-            var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-            for (var i = 0; i < 12; i++) {
-                monthSelect.append($('<option></option>').val((i+1).toString().padStart(2, '0')).html(months[i]));
-            }
-
-            var daySelect = $('#dobDay');
-            for (var i = 1; i <= 31; i++) {
-                daySelect.append($('<option></option>').val(i.toString().padStart(2, '0')).html(i));
-            }
-
-            var yearSelect = $('#dobYear');
-            var currentYear = new Date().getFullYear();
-            for (var i = currentYear; i >= 1940; i--) {
-                yearSelect.append($('<option></option>').val(i).html(i));
-            }
-            yearSelect.val(2000);
-
             function getTemperatureColor(temp) {
-                if (temp >= 35) return '#ff4444';
-                if (temp >= 30) return '#ff8844';
-                if (temp >= 25) return '#ffbb44';
-                if (temp >= 20) return '#ffdd44';
-                if (temp >= 15) return '#44aa44';
-                if (temp >= 10) return '#44aaff';
-                if (temp >= 5) return '#4477ff';
-                return '#4444ff';
+                // Enhanced temperature color scale
+                if (temp >= 40) return '#8B0000';      // Dark Red (Scorching)
+                if (temp >= 35) return '#FF0000';      // Red (Very Hot)
+                if (temp >= 30) return '#FF4500';      // Orange Red (Hot)
+                if (temp >= 25) return '#FFA500';      // Orange (Warm)
+                if (temp >= 20) return '#FFD700';      // Yellow (Mild Warm)
+                if (temp >= 15) return '#90EE90';      // Light Green (Pleasant)
+                if (temp >= 10) return '#87CEEB';      // Light Blue (Cool)
+                if (temp >= 5) return '#0000FF';       // Blue (Cold)
+                if (temp >= 0) return '#00008B';       // Dark Blue (Very Cold)
+                return '#800080';                      // Purple (Freezing)
             }
 
             function getWeatherIcon(weatherCode) {
@@ -311,7 +344,18 @@
                 return weatherIcons[weatherCode] || '❓';
             }
 
+            function showToast(message, duration = 3000) {
+                const toast = $('#toast');
+                toast.text(message).fadeIn();
+                setTimeout(() => toast.fadeOut(), duration);
+            }
+
             function renderHistoryTiles(data) {
+                // Set year indicators
+                $('.year-start').text(data.timeline[0].year);
+                $('.year-end').text(data.timeline[data.timeline.length - 1].year);
+
+                // Create tiles
                 const tilesHtml = data.timeline.map(year => {
                     const temp = isFahrenheit ? (year.maxTemp * 9/5 + 32).toFixed(1) : year.maxTemp.toFixed(1);
                     const color = getTemperatureColor(year.maxTemp);
@@ -323,29 +367,36 @@
                     `;
                 }).join('');
 
-                const summaryHtml = Object.entries(data.analysis.weatherTypes)
-                    .map(([type, info]) => `
-                        <div class="summary-item">
-                            ${type}: ${info.percentage}%
-                        </div>
-                    `).join('');
+                $('.timeline-grid').html(tilesHtml);
 
+                // Calculate and display weather stats
+                const avgTemp = data.timeline.reduce((sum, year) => sum + year.maxTemp, 0) / data.timeline.length;
+                const avgTempDisplay = isFahrenheit ? (avgTemp * 9/5 + 32).toFixed(1) : avgTemp.toFixed(1);
+
+                const statsHtml = Object.entries(data.analysis.weatherTypes)
+                    .map(([type, info]) => `
+                        <div class="stat-item">
+                            <div class="stat-label">${type}</div>
+                            <div class="stat-value">${info.percentage}%</div>
+                        </div>
+                    `).join('') + `
+                    <div class="stat-item">
+                        <div class="stat-label">Average Temperature</div>
+                        <div class="stat-value">${avgTempDisplay}°${isFahrenheit ? 'F' : 'C'}</div>
+                    </div>`;
+
+                $('.weather-stats').html(statsHtml);
+
+                // Render forecast
                 const predictionTemp = isFahrenheit ? 
                     (data.prediction.temperature * 9/5 + 32).toFixed(1) : 
                     data.prediction.temperature.toFixed(1);
 
-                return `
-                    <div class="history-container">
-                        <h3>Your Birthday Weather History</h3>
-                        <div class="history-tiles">${tilesHtml}</div>
-                        <div class="weather-summary">${summaryHtml}</div>
-                        <div class="prediction-box">
-                            <h4>Next Birthday Forecast</h4>
-                            <div class="weather-icon">${getWeatherIcon(data.prediction.weatherCode)}</div>
-                            <div>${predictionTemp}°${isFahrenheit ? 'F' : 'C'}</div>
-                        </div>
-                    </div>
-                `;
+                $('.forecast-container').html(`
+                    <div class="forecast-header">Next Birthday Forecast</div>
+                    <div class="forecast-icon">${getWeatherIcon(data.prediction.weatherCode)}</div>
+                    <div>${predictionTemp}°${isFahrenheit ? 'F' : 'C'}</div>
+                `);
             }
 
             async function checkWeather() {
@@ -362,8 +413,8 @@
                     year: 'numeric'
                 });
 
-                $('#weatherResult').html('Loading...');
-                $('#historyContainer').empty();
+                $('.weather-content, .horoscope-content').html('Loading...');
+                $('.timeline-grid, .weather-stats, .forecast-container').empty();
 
                 try {
                     // Get current day weather
@@ -391,39 +442,33 @@
 
                     if (weatherResponse.daily && weatherResponse.daily.temperature_2m_max) {
                         const maxTemp = isFahrenheit ? 
-                        (weatherResponse.daily.temperature_2m_max[0] * 9/5 + 32).toFixed(1) : 
+                            (weatherResponse.daily.temperature_2m_max[0] * 9/5 + 32).toFixed(1) : 
                             weatherResponse.daily.temperature_2m_max[0].toFixed(1);
-                        const weatherIcon = getWeatherIcon(weatherResponse.daily.weathercode[0]);
                         const unit = isFahrenheit ? '°F' : '°C';
 
-                        // Main weather display
-                        let html = `
-                            <h2 class="text-center">${formattedDate}</h2>
-                            <div class="weather-icon">${weatherIcon}</div>
-                            <div style="text-align: center; font-size: 1.2em; margin: 10px 0;">
-                                ${maxTemp}${unit}
+                        // Birthday Weather Section
+                        $('.weather-content').html(`
+                            <div style="text-align: center">
+                                <div style="font-size: 1.5em; margin-bottom: 10px;">${getWeatherIcon(weatherResponse.daily.weathercode[0])}</div>
+                                <div style="font-size: 1.2em;">${maxTemp}${unit}</div>
                             </div>
-                        `;
+                        `);
 
-                        // Personality traits
+                        // Horoscope Section
                         if (weatherResponse.horoscope) {
-                            html += `
-                                <div style="margin: 20px 0;">
-                                    ${weatherResponse.horoscope.traits.map(trait => 
-                                        `<div class="personality-trait">${trait}</div>`
-                                    ).join('')}
-                                    ${weatherResponse.horoscope.history ? 
-                                        `<div class="personality-trait">${weatherResponse.horoscope.history}</div>` : 
-                                        ''}
-                                </div>
-                            `;
+                            $('.horoscope-content').html(
+                                weatherResponse.horoscope.traits
+                                    .map(trait => `<div class="personality-trait">${trait}</div>`)
+                                    .join('') +
+                                (weatherResponse.horoscope.history ? 
+                                    `<div class="personality-trait">${weatherResponse.horoscope.history}</div>` : 
+                                    '')
+                            );
                         }
 
-                        $('#weatherResult').html(html);
-
-                        // Render historical weather tiles
+                        // Render historical timeline
                         if (timelineResponse && timelineResponse.timeline) {
-                            $('#historyContainer').html(renderHistoryTiles(timelineResponse));
+                            renderHistoryTiles(timelineResponse);
                         }
 
                         // Show share button
@@ -436,19 +481,19 @@
                         });
                     }
                 } catch (error) {
-                    $('#weatherResult').html('<p class="error-message">Failed to fetch weather data</p>');
+                    $('.weather-content, .horoscope-content').html(
+                        '<p class="error-message">Failed to fetch weather data</p>'
+                    );
                     console.error('Weather fetch error:', error);
                 }
             }
 
             function setupSharing(data) {
-                const shareBtn = document.getElementById('shareBtn');
-                
                 const shareText = data.mode === 'friend' ?
                     `🎂 On your birthday in ${data.city}, it was ${data.temp}! Check your birthday weather at ${websiteURL}` :
                     `🌤️ On my birthday in ${data.city}, it was ${data.temp}! Check your birthday weather at ${websiteURL}`;
 
-                shareBtn.onclick = async () => {
+                $('#shareBtn').off('click').on('click', async () => {
                     if (navigator.share) {
                         try {
                             await navigator.share({
@@ -477,8 +522,32 @@
                             showToast('Unable to share 😢');
                         }
                     }
-                };
+                });
             }
+
+            // Initialize date dropdowns and event handlers
+            const monthSelect = $('#dobMonth');
+            const months = ["January", "February", "March", "April", "May", "June", 
+                          "July", "August", "September", "October", "November", "December"];
+            months.forEach((month, i) => {
+                monthSelect.append($('<option></option>')
+                    .val((i + 1).toString().padStart(2, '0'))
+                    .html(month));
+            });
+
+            const daySelect = $('#dobDay');
+            for (let i = 1; i <= 31; i++) {
+                daySelect.append($('<option></option>')
+                    .val(i.toString().padStart(2, '0'))
+                    .html(i));
+            }
+
+            const yearSelect = $('#dobYear');
+            const currentYear = new Date().getFullYear();
+            for (let i = currentYear; i >= 1940; i--) {
+                yearSelect.append($('<option></option>').val(i).html(i));
+            }
+            yearSelect.val(2000);
 
             // City search autocomplete
             $("#searchInput").autocomplete({
@@ -518,21 +587,23 @@
                 $('#getWeather').toggle(hasCity);
             }
 
+            // Event handlers
+            $('.mode-button').click(function() {
+                $('.mode-button').removeClass('active');
+                $(this).addClass('active');
+                const mode = $(this).data('mode');
+                $("#searchInput").attr('placeholder', 
+                    mode === 'friend' ? "Enter friend's birthplace" : "Enter your birthplace"
+                );
+            });
+
             $('#dobDay, #dobMonth, #dobYear').on('change', checkFormCompletion);
             $('#getWeather').on('click', checkWeather);
             $('#tempToggle').on('change', function() {
                 isFahrenheit = !this.checked;
-                if($('#weatherResult').html()) {
+                if($('.weather-content').html()) {
                     checkWeather();
                 }
-            });
-
-            yearSelect.on('focus', function() {
-                var defaultOption = $(this).find('option[value="2000"]');
-                var selectElement = this;
-                setTimeout(function() {
-                    selectElement.scrollTop = defaultOption.offset().top - selectElement.offsetTop - (selectElement.offsetHeight / 2) + (defaultOption.height() / 2);
-                }, 0);
             });
         });
     </script>
