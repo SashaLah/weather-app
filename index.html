@@ -159,19 +159,15 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            width: 100%;
-            box-sizing: border-box;
         }
 
         .timeline-grid {
             display: grid;
             grid-template-columns: repeat(12, 1fr);
-            gap: min(1%, 3px);
+            gap: 3px;
             position: relative;
             padding: 10px 0;
             margin-top: 25px;
-            width: calc(100% - 40px);
-            box-sizing: border-box;
         }
 
         .year-marker {
@@ -200,13 +196,13 @@
             justify-content: center;
             position: relative;
             cursor: pointer;
-            font-size: clamp(12px, 2vw, 18px);
+            min-height: 32px;  /* Slightly increased tile size */
         }
 
         .weather-tile .icon {
-            font-size: clamp(14px, 2.5vw, 18px);
+            font-size: 18px;
+            line-height: 1;
         }
-
         .tile-tooltip {
             position: absolute;
             background: rgba(0,0,0,0.8);
@@ -301,6 +297,14 @@
         }
 
         @media (max-width: 600px) {
+            .timeline-grid {
+                gap: 2px;
+            }
+            
+            .weather-tile .icon {
+                font-size: 16px;
+            }
+
             .results-grid {
                 grid-template-columns: 1fr;
             }
@@ -342,6 +346,7 @@
         <span class="toggle-label">°F / °C</span>
     </div>
 
+    <!-- Moved timeline container above results grid -->
     <div class="timeline-container">
         <h3 class="section-header">Your Past Birthday Weather By Year</h3>
         <div class="timeline-grid"></div>
