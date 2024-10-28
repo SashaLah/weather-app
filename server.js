@@ -42,192 +42,134 @@ app.use(limiter);
 // Simplified weather categories
 const weatherCategories = {
     SUNNY: [0, 1],
-    CLOUDY: [2, 3],
+    PARTLY_CLOUDY: [2],
+    CLOUDY: [3],
     FOGGY: [45, 48],
     RAINY: [51, 53, 55, 61, 63, 65],
     SNOWY: [71, 73, 75, 77],
     STORMY: [95, 96, 99]
 };
 
-// Simplified weather traits
+// Direct and controversial weather traits
 const weatherTraits = {
     0: { // Clear sky
-        trait: "You shine bright and love attention",
-        mood: "You're a ray of sunshine!"
+        positive: "You naturally draw attention",
+        negative: "but you're hot-headed and exhausting to be around"
     },
     1: { // Mainly clear
-        trait: "You're optimistic and cheerful",
-        mood: "You bring light to others"
+        positive: "You shine bright and grab attention",
+        negative: "but your need for spotlight annoys everyone"
     },
     2: { // Partly cloudy
-        trait: "You're moody but balanced",
-        mood: "You take life as it comes"
+        positive: "You try to brighten others' days",
+        negative: "but you're often blocked by your own inner darkness"
     },
     3: { // Overcast
-        trait: "You're deep and thoughtful",
-        mood: "You keep to yourself"
+        positive: "You have depth",
+        negative: "but you bring down everyone's mood"
     },
     45: { // Foggy
-        trait: "You're mysterious and hard to read",
-        mood: "You keep people guessing"
+        positive: "You're mysterious",
+        negative: "but you confuse and frustrate people"
     },
     48: { // Foggy with frost
-        trait: "You're cool and mysterious",
-        mood: "You're hard to figure out"
+        positive: "You're cool and collected",
+        negative: "but you're impossible to read or trust"
     },
     51: { // Light drizzle
-        trait: "You're sensitive and emotional",
-        mood: "You cry easily"
+        positive: "You're sensitive",
+        negative: "but you cry at literally everything"
     },
-    53: { // Moderate drizzle
-        trait: "You wear your heart on your sleeve",
-        mood: "You're not afraid to show feelings"
-    },
-    55: { // Dense drizzle
-        trait: "You're super emotional",
-        mood: "You're a big softie"
-    },
-    61: { // Slight rain
-        trait: "You cry at movies",
-        mood: "You feel things deeply"
+    61: { // Light rain
+        positive: "You're emotionally available",
+        negative: "but your constant emotional outbursts are draining"
     },
     63: { // Moderate rain
-        trait: "You're very emotional",
-        mood: "You let it all out"
+        positive: "You feel everything deeply",
+        negative: "but you're way too dramatic"
     },
     65: { // Heavy rain
-        trait: "You're extremely emotional",
-        mood: "You're a drama queen"
+        positive: "You're emotionally intense",
+        negative: "but you're a complete drama queen"
     },
     71: { // Light snow
-        trait: "You're gentle and pure",
-        mood: "You're soft-hearted"
+        positive: "You're uniquely beautiful",
+        negative: "but you're cold and distant"
     },
     73: { // Moderate snow
-        trait: "You're cold but beautiful",
-        mood: "You're uniquely special"
+        positive: "You're pure at heart",
+        negative: "but you freeze people out"
     },
     75: { // Heavy snow
-        trait: "You're ice cold when angry",
-        mood: "You can be pretty cold"
+        positive: "You're striking and memorable",
+        negative: "but you're ice cold and push everyone away"
     },
     95: { // Thunderstorm
-        trait: "You're loud and dramatic",
-        mood: "You love drama"
+        positive: "You're powerful and dynamic",
+        negative: "but you create chaos wherever you go"
     },
     96: { // Thunderstorm with hail
-        trait: "You're fierce and intense",
-        mood: "You're a force of nature"
+        positive: "You're a force of nature",
+        negative: "but you destroy everything in your path"
     },
     99: { // Heavy thunderstorm
-        trait: "You're super dramatic",
-        mood: "You're incredibly intense"
+        positive: "You're absolutely unforgettable",
+        negative: "but you're overwhelming and destructive"
     }
 };
 
-// Simplified temperature traits
+// Direct temperature traits
 function getTemperatureTraits(maxTemp) {
-    if (maxTemp > 35) {
+    if (maxTemp >= 40) {
         return {
-            trait: "You're hot-headed and impulsive",
-            mood: "You run hot!"
+            trait: "You're dangerously hot-headed and impossible when angry",
+            mood: "Explosive"
         };
-    } else if (maxTemp > 30) {
+    } else if (maxTemp >= 35) {
         return {
-            trait: "You're warm and energetic",
-            mood: "You're full of energy"
+            trait: "You're quick to anger and unbearable when mad",
+            mood: "Hot-tempered"
         };
-    } else if (maxTemp > 20) {
+    } else if (maxTemp >= 30) {
         return {
-            trait: "You're balanced and steady",
-            mood: "You keep it cool"
+            trait: "You run hot and get fired up easily",
+            mood: "Intense"
         };
-    } else if (maxTemp > 10) {
+    } else if (maxTemp >= 25) {
         return {
-            trait: "You're cool and collected",
-            mood: "You stay chill"
+            trait: "You're energetic but can be too much",
+            mood: "Energetic"
+        };
+    } else if (maxTemp >= 20) {
+        return {
+            trait: "You're generally balanced, sometimes boring",
+            mood: "Balanced"
+        };
+    } else if (maxTemp >= 15) {
+        return {
+            trait: "You're cool but can be too chill",
+            mood: "Relaxed"
+        };
+    } else if (maxTemp >= 10) {
+        return {
+            trait: "You're detached and emotionally unavailable",
+            mood: "Distant"
+        };
+    } else if (maxTemp >= 5) {
+        return {
+            trait: "You're cold and push people away",
+            mood: "Cold"
         };
     } else {
         return {
-            trait: "You're cold as ice",
-            mood: "You're freezing cold"
+            trait: "You're freezing cold and emotionally frozen",
+            mood: "Frozen"
         };
     }
 }
-// Helper functions
-function analyzeWeatherHistory(weatherData) {
-    const analysis = {
-        weatherTypes: {},
-        temperatures: {
-            average: 0,
-            highest: -Infinity,
-            lowest: Infinity
-        },
-        summary: {}
-    };
 
-    weatherData.forEach(data => {
-        // Get weather type
-        let weatherType = 'UNKNOWN';
-        for (const [category, codes] of Object.entries(weatherCategories)) {
-            if (codes.includes(data.weatherCode)) {
-                weatherType = category;
-                break;
-            }
-        }
-
-        // Count weather types
-        analysis.weatherTypes[weatherType] = (analysis.weatherTypes[weatherType] || 0) + 1;
-
-        // Track temperatures
-        analysis.temperatures.average += data.maxTemp;
-        analysis.temperatures.highest = Math.max(analysis.temperatures.highest, data.maxTemp);
-        analysis.temperatures.lowest = Math.min(analysis.temperatures.lowest, data.maxTemp);
-    });
-
-    // Calculate averages and percentages
-    const total = weatherData.length;
-    analysis.temperatures.average /= total;
-
-    // Convert counts to percentages
-    Object.keys(analysis.weatherTypes).forEach(type => {
-        const percentage = (analysis.weatherTypes[type] / total) * 100;
-        analysis.weatherTypes[type] = {
-            count: analysis.weatherTypes[type],
-            percentage: Math.round(percentage)
-        };
-    });
-
-    // Create simple summary
-    analysis.summary = {
-        mainWeather: Object.entries(analysis.weatherTypes)
-            .sort((a, b) => b[1].count - a[1].count)[0][0],
-        averageTemp: Math.round(analysis.temperatures.average)
-    };
-
-    return analysis;
-}
-
-function predictNextBirthday(weatherData) {
-    const recentYears = weatherData.slice(-5);
-    const weatherCounts = {};
-    let totalTemp = 0;
-
-    recentYears.forEach(data => {
-        weatherCounts[data.weatherCode] = (weatherCounts[data.weatherCode] || 0) + 1;
-        totalTemp += data.maxTemp;
-    });
-
-    const mostCommonWeather = Object.entries(weatherCounts)
-        .sort((a, b) => b[1] - a[1])[0][0];
-
-    return {
-        weatherCode: parseInt(mostCommonWeather),
-        temperature: totalTemp / recentYears.length
-    };
-}
-
-function generateSimpleHoroscope(weatherData, historicalAnalysis) {
+// Generate direct horoscope
+function generateDirectHoroscope(weatherData) {
     const weathercode = weatherData.daily.weathercode[0];
     const maxTemp = weatherData.daily.temperature_2m_max[0];
     const precipitation = weatherData.daily.precipitation_sum[0];
@@ -236,29 +178,25 @@ function generateSimpleHoroscope(weatherData, historicalAnalysis) {
     const tempTrait = getTemperatureTraits(maxTemp);
 
     const horoscope = {
-        traits: [weatherTrait.trait, tempTrait.trait],
-        mood: weatherTrait.mood
+        traits: [
+            `${weatherTrait.positive} ${weatherTrait.negative}`,
+            tempTrait.trait
+        ]
     };
 
-    // Add rain personality if applicable
-    if (precipitation > 20) {
-        horoscope.traits.push("You're a total crybaby");
-    } else if (precipitation > 10) {
-        horoscope.traits.push("You get emotional easily");
+    // Add precipitation-based trait
+    if (precipitation > 30) {
+        horoscope.traits.push("You're drowning in emotions and exhausting to others");
+    } else if (precipitation > 15) {
+        horoscope.traits.push("You cry too much and make everyone uncomfortable");
     } else if (precipitation > 0) {
-        horoscope.traits.push("You tear up sometimes");
-    }
-
-    // Add historical insight if available
-    if (historicalAnalysis) {
-        horoscope.history = `Your birthday is usually ${historicalAnalysis.summary.mainWeather.toLowerCase()} (${
-            historicalAnalysis.weatherTypes[historicalAnalysis.summary.mainWeather].percentage
-        }% of the time)`;
+        horoscope.traits.push("You get emotional at the smallest things");
     }
 
     return horoscope;
 }
 
+// Utility functions
 function normalizeCountryName(country) {
     const countryMappings = {
         'united states of america': 'united states',
@@ -273,30 +211,6 @@ function normalizeCountryName(country) {
     return countryMappings[country.toLowerCase()] || country;
 }
 
-function getWeatherDescription(weatherCode, maxTemp, precipitation) {
-    const temp = maxTemp;
-    let tempDesc = "";
-    if (temp >= 35) tempDesc = "scorching hot";
-    else if (temp >= 30) tempDesc = "very hot";
-    else if (temp >= 25) tempDesc = "warm";
-    else if (temp >= 20) tempDesc = "mild";
-    else if (temp >= 15) tempDesc = "cool";
-    else if (temp >= 10) tempDesc = "chilly";
-    else if (temp >= 5) tempDesc = "cold";
-    else tempDesc = "freezing cold";
-
-    const weatherTypes = {
-        0: "sunny", 1: "mostly clear", 2: "partly cloudy", 3: "cloudy",
-        45: "foggy", 48: "frosty", 51: "drizzly", 53: "drizzly", 55: "drizzly",
-        61: "rainy", 63: "rainy", 65: "very rainy", 71: "snowy", 73: "snowy",
-        75: "very snowy", 95: "stormy", 96: "stormy", 99: "very stormy"
-    };
-
-    const weatherDesc = weatherTypes[weatherCode] || "";
-    const rainDesc = precipitation > 0 ? ` with ${precipitation}mm of rain` : "";
-
-    return `It was ${tempDesc} and ${weatherDesc}${rainDesc}`;
-}
 const validateCitySearch = [
     query('term')
         .trim()
@@ -449,8 +363,50 @@ app.get('/weather/timeline', async (req, res) => {
             });
         }
 
-        const analysis = analyzeWeatherHistory(timelineData);
-        const prediction = predictNextBirthday(timelineData);
+        // Analyze weather patterns
+        const analysis = {
+            weatherTypes: {},
+            temperatures: {
+                average: timelineData.reduce((sum, data) => sum + data.maxTemp, 0) / timelineData.length
+            }
+        };
+
+        // Count weather types
+        timelineData.forEach(data => {
+            let type = 'UNKNOWN';
+            for (const [category, codes] of Object.entries(weatherCategories)) {
+                if (codes.includes(data.weatherCode)) {
+                    type = category;
+                    break;
+                }
+            }
+            analysis.weatherTypes[type] = (analysis.weatherTypes[type] || 0) + 1;
+        });
+
+        // Convert to percentages
+        const total = timelineData.length;
+        Object.keys(analysis.weatherTypes).forEach(type => {
+            analysis.weatherTypes[type] = {
+                count: analysis.weatherTypes[type],
+                percentage: Math.round((analysis.weatherTypes[type] / total) * 100)
+            };
+        });
+
+        // Generate prediction
+        const recentYears = timelineData.slice(-5);
+        const weatherCounts = {};
+        let totalTemp = 0;
+
+        recentYears.forEach(data => {
+            weatherCounts[data.weatherCode] = (weatherCounts[data.weatherCode] || 0) + 1;
+            totalTemp += data.maxTemp;
+        });
+
+        const prediction = {
+            weatherCode: parseInt(Object.entries(weatherCounts)
+                .sort((a, b) => b[1] - a[1])[0][0]),
+            temperature: totalTemp / recentYears.length
+        };
 
         const response = {
             timeline: timelineData,
@@ -514,28 +470,14 @@ app.get('/weather', async (req, res) => {
             });
         }
 
-        // Get historical context
-        const month = requestDate.getMonth() + 1;
-        const day = requestDate.getDate();
-        const historicalData = await getHistoricalData(
-            latitude,
-            longitude,
-            month,
-            day,
-            requestDate.getFullYear() - 10,
-            requestDate.getFullYear()
-        );
+        weatherData.horoscope = generateDirectHoroscope(weatherData);
         
-        const analysis = historicalData ? analyzeWeatherHistory(historicalData) : null;
-        weatherData.horoscope = generateSimpleHoroscope(weatherData, analysis);
-        weatherData.historical_analysis = analysis;
-
         const cacheDuration = isHistorical ? 86400 : 3600;
         cache.set(cacheKey, weatherData, cacheDuration);
         res.json(weatherData);
 
     } catch (error) {
-        console.error('Weather API error:', error);
+        console.error('Weather API error:', error.response?.data || error);
         res.status(500).json({ 
             error: 'Weather API error',
             message: error.message
