@@ -63,6 +63,7 @@
             justify-content: center;
             gap: 15px;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .search-button {
@@ -75,7 +76,7 @@
             font-size: 16px;
             transition: background-color 0.3s;
             display: none;
-            white-space: nowrap;
+            min-width: 120px;
         }
 
         .switch {
@@ -163,7 +164,7 @@
         .timeline-grid {
             display: grid;
             grid-template-columns: repeat(12, 1fr);
-            gap: 2px;
+            gap: 3px;
             position: relative;
             padding: 10px 0;
             margin-top: 25px;
@@ -195,10 +196,11 @@
             justify-content: center;
             position: relative;
             cursor: pointer;
+            min-height: 30px;
         }
 
         .weather-tile .icon {
-            font-size: 16px;
+            font-size: 18px;
             line-height: 1;
         }
 
@@ -266,21 +268,6 @@
             50% { transform: translateY(-10px); }
             100% { transform: translateY(0px); }
         }
-
-        .weather-info-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .weather-info-item {
-            background: #f8f9fa;
-            padding: 8px;
-            border-radius: 4px;
-            text-align: center;
-        }
-
         .toast {
             position: fixed;
             bottom: 20px;
@@ -311,18 +298,14 @@
 
         @media (max-width: 600px) {
             .timeline-grid {
-                gap: 1px;
+                gap: 2px;
             }
             
             .weather-tile .icon {
-                font-size: 14px;
+                font-size: 16px;
             }
 
             .results-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .weather-info-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -411,60 +394,34 @@
                 return '#800080';                      // Freezing
             }
 
-            function getHarshPersonalityTrait(weatherCode, maxTemp, precipitation) {
-                const traits = {
-                    0: {
-                        positive: "You're naturally cheerful and bring energy to others",
-                        negative: "but you can be hot-headed and exhausting to be around"
-                    },
-                    1: {
-                        positive: "You shine bright and grab attention easily",
-                        negative: "but your need for spotlight can be annoying"
-                    },
-                    2: {
-                        positive: "You try to brighten others' days",
-                        negative: "but you're often blocked by your own inner darkness"
-                    },
-                    3: {
-                        positive: "You're deep and thoughtful",
-                        negative: "but you tend to bring down the mood sometimes"
-                    },
-                    51: {
-                        positive: "You're sensitive to others' feelings",
-                        negative: "but you sometimes cry easily over everything"
-                    },
-                    61: {
-                        positive: "You're emotionally available",
-                        negative: "but your are prone to emotional outbursts"
-                    },
-                    65: {
-                        positive: "You feel everything deeply",
-                        negative: "but can also be a drama queen"
-                    },
-                    95: {
-                        positive: "You're passionate and intense",
-                        negative: "but you create chaos wherever you go"
-                    },
-                    99: {
-                        positive: "You have a powerful presence",
-                        negative: "but you're overwhelming and destructive"
-                    }
+            function getHoroscopeText(weatherCode) {
+                const horoscopes = {
+                    0: "Like a clear sky, you bring brightness to others' days. Your optimistic nature is infectious.",
+                    1: "Part sun, part cloud - you're adaptable and balanced. You know how to find the silver lining.",
+                    2: "You're a dreamer with your head in the clouds. Your imagination knows no bounds.",
+                    3: "Mysterious as an overcast day, you have hidden depths that few truly understand.",
+                    45: "You move through life like a gentle fog, softening sharp edges and bringing mystery.",
+                    48: "You're hard to pin down, like mist in the morning. Your ethereal nature intrigues others.",
+                    51: "Light as drizzle, you bring subtle refreshment to those around you.",
+                    53: "You have a persistently nurturing nature, like steady rain that helps things grow.",
+                    55: "Your presence is powerfully felt, like heavy rain that commands attention.",
+                    61: "You're a force of nature, bringing cleansing rain to wash away the old.",
+                    63: "Your emotions run deep like rain-filled rivers, nourishing those around you.",
+                    65: "Intense and powerful, you make a lasting impression wherever you go.",
+                    71: "Pure as snow, you bring tranquility and peace to chaotic situations.",
+                    73: "You transform environments like fresh snow, making everything peaceful.",
+                    75: "Your dramatic nature, like heavy snow, changes everything it touches.",
+                    77: "You're unique and delicate, like snow crystals - no two days are the same.",
+                    80: "You're refreshing and cleansing, washing away negativity.",
+                    81: "Your passion falls like rain, nourishing growth and new beginnings.",
+                    82: "You're a powerful force for change, like a heavy downpour.",
+                    85: "Gentle as snow, you bring beauty and tranquility to those around you.",
+                    86: "You transform situations like heavy snow, leaving everything changed.",
+                    95: "You're electric and exciting, like a thunderstorm on a hot day.",
+                    96: "Your presence is impossible to ignore, like thunder and lightning.",
+                    99: "You're a force of nature, bringing dramatic change wherever you go."
                 };
-
-                let tempTrait = "";
-                if (maxTemp >= 35) {
-                    tempTrait = "You're quick to anger and unbearable when mad";
-                } else if (maxTemp <= 5) {
-                    tempTrait = "You can be ice cold and push everyone away";
-                }
-
-                const baseTrait = traits[weatherCode] || traits[0];
-                return {
-                    traits: [
-                        `${baseTrait.positive} ${baseTrait.negative}`,
-                        tempTrait
-                    ].filter(Boolean)
-                };
+                return horoscopes[weatherCode] || horoscopes[0];
             }
 
             function showToast(message, duration = 3000) {
@@ -520,7 +477,6 @@
 
                 $('.weather-stats').html(statsHtml);
 
-                // Calculate next birthday forecast
                 const today = new Date();
                 const birthdayMonth = parseInt($('#dobMonth').val()) - 1;
                 const birthdayDay = parseInt($('#dobDay').val());
@@ -564,91 +520,36 @@
                 $('.timeline-grid, .weather-stats, .forecast-container').empty();
 
                 try {
-                    const [weatherResponse, timelineResponse] = await Promise.all([
-                        $.ajax({
-                            url: "/weather",
-                            data: {
-                                latitude: selectedCity.latitude,
-                                longitude: selectedCity.longitude,
-                                date: date
-                            }
-                        }),
-                        $.ajax({
-                            url: "/weather/timeline",
-                            data: {
-                                latitude: selectedCity.latitude,
-                                longitude: selectedCity.longitude,
-                                month: month,
-                                day: day,
-                                startYear: year,
-                                endYear: new Date().getFullYear()
-                            }
-                        })
-                    ]);
-
-                    if (weatherResponse.daily?.temperature_2m_max) {
-                        const maxTemp = isFahrenheit ? 
-                            (weatherResponse.daily.temperature_2m_max[0] * 9/5 + 32).toFixed(1) : 
-                            weatherResponse.daily.temperature_2m_max[0].toFixed(1);
-                        const minTemp = isFahrenheit ?
-                            (weatherResponse.daily.temperature_2m_min[0] * 9/5 + 32).toFixed(1) :
-                            weatherResponse.daily.temperature_2m_min[0].toFixed(1);
-                        const unit = isFahrenheit ? '°F' : '°C';
-                        const precipitation = weatherResponse.daily.precipitation_sum[0];
-                        const windSpeed = weatherResponse.daily.windspeed_10m_max[0];
-
+                    const weatherResponse = await $.get(`/api/weather/${selectedCity.id}/${date}`);
+                    if (weatherResponse.temperature) {
+                        const temp = isFahrenheit ? 
+                            (weatherResponse.temperature * 9/5 + 32).toFixed(1) : 
+                            weatherResponse.temperature.toFixed(1);
+                        
                         $('.weather-content').html(`
                             <div style="text-align: center">
-                                <div class="weather-icon">${getWeatherIcon(weatherResponse.daily.weathercode[0])}</div>
-                                <div class="weather-info-grid">
-                                    <div class="weather-info-item">
-                                        <div>High Temperature</div>
-                                        <div style="font-size: 1.2em">${maxTemp}${unit}</div>
-                                    </div>
-                                    <div class="weather-info-item">
-                                        <div>Low Temperature</div>
-                                        <div style="font-size: 1.2em">${minTemp}${unit}</div>
-                                    </div>
-                                    <div class="weather-info-item">
-                                        <div>Wind Speed</div>
-                                        <div style="font-size: 1.2em">${windSpeed} km/h</div>
-                                    </div>
-                                    <div class="weather-info-item">
-                                        <div>Precipitation</div>
-                                        <div style="font-size: 1.2em">${precipitation} mm</div>
-                                    </div>
-                                </div>
+                                <div class="weather-icon">${getWeatherIcon(weatherResponse.weatherCode)}</div>
+                                <div style="font-size: 1.2em">${temp}°${isFahrenheit ? 'F' : 'C'}</div>
                             </div>
                         `);
 
-                        const personality = getHarshPersonalityTrait(
-                            weatherResponse.daily.weathercode[0],
-                            weatherResponse.daily.temperature_2m_max[0],
-                            precipitation
-                        );
-
-                        $('.horoscope-content').html(
-                            personality.traits
-                                .map(trait => `<div class="personality-trait">${trait}</div>`)
-                                .join('')
-                        );
-
-                        if (timelineResponse?.timeline) {
-                            renderHistoryTiles(timelineResponse);
+                        $('.horoscope-content').html(getHoroscopeText(weatherResponse.weatherCode));
+                        
+                        if (weatherResponse.timeline) {
+                            renderHistoryTiles(weatherResponse);
                         }
 
                         $('#shareContainer').show();
                         setupSharing({
                             date: formattedDate,
-                            city: selectedCity.city,
-                            temp: maxTemp + unit
+                            city: selectedCity.name,
+                            temp: temp + (isFahrenheit ? '°F' : '°C')
                         });
                     }
                 } catch (error) {
                     $('.weather-content, .horoscope-content').html(
-                        '<p class="error-message">Failed to fetch weather data</p>'
+                        '<p style="color: #dc3545;">Failed to fetch weather data</p>'
                     );
-                    console.error('Weather fetch error:', error);
                 }
             }
 
@@ -663,13 +564,11 @@
                                 text: shareText,
                                 url: websiteURL
                             });
-                            gtag('event', 'share', { 'method': 'native_share' });
                         } catch (err) {
                             if (err.name !== 'AbortError') {
                                 try {
                                     await navigator.clipboard.writeText(shareText);
                                     showToast('Copied to clipboard! 📋');
-                                    gtag('event', 'share', { 'method': 'clipboard' });
                                 } catch (clipErr) {
                                     showToast('Unable to share 😢');
                                 }
@@ -679,7 +578,6 @@
                         try {
                             await navigator.clipboard.writeText(shareText);
                             showToast('Copied to clipboard! 📋');
-                            gtag('event', 'share', { 'method': 'clipboard' });
                         } catch (err) {
                             showToast('Unable to share 😢');
                         }
@@ -687,7 +585,6 @@
                 });
             }
 
-            // Initialize date dropdowns
             var monthSelect = $('#dobMonth');
             var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
             for (var i = 0; i < 12; i++) {
@@ -707,35 +604,12 @@
             yearSelect.val(2000);
 
             $("#searchInput").autocomplete({
-                source: function(request, response) {
-                    $.ajax({
-                        url: "/cities",
-                        dataType: "json",
-                        data: { term: request.term },
-                        success: function(data) {
-                            response(data.map(function(item) {
-                                let label = item.city;
-                                if (item.state) label += `, ${item.state}`;
-                                if (item.country) label += `, ${item.country}`;
-                                
-                                return {
-                                    label: label,
-                                    value: item.city,
-                                    item: item
-                                };
-                            }));
-                        }
-                    });
-                },
+                source: "/api/cities/search",
                 minLength: 2,
                 select: function(event, ui) {
-                    selectedCity = ui.item.item;
-                    $("#searchInput").val(ui.item.label);
+                    selectedCity = ui.item;
                     checkFormCompletion();
-                    return false;
-                },
-                autoFocus: false,
-                delay: 300
+                }
             });
 
             function checkFormCompletion() {
