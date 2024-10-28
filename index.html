@@ -73,6 +73,58 @@
             display: none;
         }
 
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            margin-right: 10px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #87CEEB;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .toggle-label {
+            vertical-align: super;
+            margin-left: 5px;
+            color: #2c3e50;
+        }
+
         .results-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -109,6 +161,7 @@
             gap: 3px;
             position: relative;
             padding: 10px 0;
+            margin-top: 25px;  /* Added space for year marker above */
         }
 
         .year-marker {
@@ -223,22 +276,68 @@
         }
 
         .weather-soulmate {
-            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%);
+            background: linear-gradient(135deg, #f0f2f5 0%, #e6e9ef 100%);
             padding: 20px;
             border-radius: 8px;
-            color: white;
+            color: #2c3e50;
             text-align: center;
             margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .soulmate-content {
+            max-width: 600px;
+            margin: 0 auto;
         }
 
         .soulmate-icon {
             font-size: 2.5em;
             margin: 10px 0;
+            animation: pulse 2s infinite;
         }
 
-        .soulmate-description {
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .zodiac-signs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
             margin: 15px 0;
-            line-height: 1.6;
+            flex-wrap: wrap;
+        }
+
+        .zodiac-sign {
+            background: #fff;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .compatibility-reason {
+            font-style: italic;
+            color: #666;
+            margin: 10px 0;
+        }
+
+        .soulmate-traits {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .soulmate-trait {
+            background: #fff;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            color: #2c3e50;
         }
 
         @media (max-width: 768px) {
@@ -308,6 +407,13 @@
         <button id="getWeather" class="search-button">Get Weather</button>
     </div>
 
+    <div class="temp-toggle" style="text-align: center; margin: 15px 0;">
+        <label class="switch">
+            <input type="checkbox" id="tempToggle">
+            <span class="slider round"></span>
+        </label>
+        <span class="toggle-label">°F / °C</span>
+    </div>
     <div class="results-grid">
         <div class="result-section" id="birthdayWeather">
             <h3 class="section-header">Weather on the day you were born</h3>
@@ -362,55 +468,89 @@
                 return '#800080';                      // Freezing
             }
 
-            function findWeatherSoulmate(birthTemp, birthWeather) {
-                // Define weather combinations that are considered compatible
-                const weatherPairs = {
-                    sunny: ['cloudy', 'mild'],
-                    rainy: ['sunny', 'warm'],
-                    snowy: ['mild', 'cloudy'],
-                    stormy: ['calm', 'mild'],
-                    hot: ['cool', 'mild'],
-                    cold: ['warm', 'mild']
+            function getCompatibleSigns(weatherCode, temp) {
+                const weatherSignPairs = {
+                    sunny: {
+                        signs: ['Leo', 'Aries', 'Sagittarius'],
+                        reason: 'Your sunny nature resonates with fire signs',
+                        element: 'Fire'
+                    },
+                    cloudy: {
+                        signs: ['Pisces', 'Cancer', 'Scorpio'],
+                        reason: 'Your contemplative nature aligns with water signs',
+                        element: 'Water'
+                    },
+                    rainy: {
+                        signs: ['Libra', 'Aquarius', 'Gemini'],
+                        reason: 'Your fluid adaptability connects with air signs',
+                        element: 'Air'
+                    },
+                    snowy: {
+                        signs: ['Capricorn', 'Taurus', 'Virgo'],
+                        reason: 'Your grounded presence matches with earth signs',
+                        element: 'Earth'
+                    }
                 };
 
-                // Temperature range for soulmate (within 5-10 degrees of birth temperature)
-                const soulmateTemp = birthTemp + (Math.random() * 10 - 5);
+                // Temperature influence on compatibility
+                const tempInfluence = temp >= 25 ? 'sunny' :
+                                    temp <= 5 ? 'snowy' :
+                                    temp <= 15 ? 'cloudy' : 'rainy';
+
+                // Weather code based matching
+                if (weatherCode <= 1) return weatherSignPairs.sunny;
+                if (weatherCode <= 3) return weatherSignPairs.cloudy;
+                if (weatherCode <= 65) return weatherSignPairs.rainy;
+                if (weatherCode <= 77) return weatherSignPairs.snowy;
                 
-                // Get season based on temperature
-                function getSeason(temp) {
-                    if (temp > 25) return 'summer';
-                    if (temp < 10) return 'winter';
-                    if (temp >= 10 && temp < 18) return 'spring';
-                    return 'autumn';
+                // Default to temperature-based matching if weather code doesn't match
+                return weatherSignPairs[tempInfluence];
+            }
+
+            function findWeatherSoulmate(birthTemp, birthWeather) {
+                function getSeasonalTraits(temp) {
+                    if (temp > 25) return {
+                        season: 'summer',
+                        traits: ['adventurous', 'outgoing', 'energetic'],
+                        activities: 'beach days and outdoor festivals',
+                        personality: 'warm and radiant'
+                    };
+                    if (temp < 10) return {
+                        season: 'winter',
+                        traits: ['introspective', 'cozy', 'thoughtful'],
+                        activities: 'fireside chats and warm gatherings',
+                        personality: 'calm and contemplative'
+                    };
+                    if (temp >= 10 && temp < 18) return {
+                        season: 'spring',
+                        traits: ['creative', 'optimistic', 'nurturing'],
+                        activities: 'garden walks and picnics',
+                        personality: 'fresh and inspiring'
+                    };
+                    return {
+                        season: 'autumn',
+                        traits: ['romantic', 'mysterious', 'artistic'],
+                        activities: 'coffee dates and museum visits',
+                        personality: 'deep and passionate'
+                    };
                 }
 
-                const birthSeason = getSeason(birthTemp);
-                
-                // Generate soulmate description
-                let description = '';
-                if (birthWeather < 3) { // Sunny
-                    description = "Your weather soulmate was born on a mild, cloudy day. They bring balance to your sunny nature with their thoughtful calm.";
-                } else if (birthWeather >= 51 && birthWeather <= 65) { // Rainy
-                    description = "Your weather soulmate was born on a warm, clear day. They help you see the bright side during your emotional storms.";
-                } else if (birthWeather >= 71 && birthWeather <= 77) { // Snowy
-                    description = "Your weather soulmate was born during a gentle spring shower. They melt your icy exterior with their warmth.";
-                } else if (birthWeather >= 95) { // Stormy
-                    description = "Your weather soulmate was born on a serene autumn day. They calm your stormy heart with their peaceful presence.";
-                } else {
-                    description = "Your weather soulmate was born in a different season, bringing complementary energy to your life.";
-                }
+                const compatibleSigns = getCompatibleSigns(birthWeather, birthTemp);
+                const seasonalProfile = getSeasonalTraits(birthTemp);
+                const soulmateTemp = birthTemp + (Math.random() * 8 - 4); // Smaller temperature variation
 
                 return {
                     temperature: soulmateTemp,
-                    description: description,
-                    season: getSeason(soulmateTemp)
+                    description: `Your weather soulmate has a ${seasonalProfile.personality} personality, born on a ${seasonalProfile.season} day. Together, you'll create perfect harmony through ${seasonalProfile.activities}.`,
+                    zodiacMatch: compatibleSigns,
+                    season: seasonalProfile.season,
+                    traits: seasonalProfile.traits,
+                    activities: seasonalProfile.activities
                 };
             }
 
             function getHarshPersonalityTrait(weatherCode, maxTemp, precipitation) {
-                // Direct, controversial personality traits
                 const traits = {
-                    // Clear/Sunny conditions
                     0: {
                         positive: "You're naturally cheerful and bring energy to others",
                         negative: "but you can be hot-headed and exhausting to be around"
@@ -419,7 +559,6 @@
                         positive: "You shine bright and grab attention easily",
                         negative: "but your need for spotlight can be annoying"
                     },
-                    // Cloudy conditions
                     2: {
                         positive: "You try to brighten others' days",
                         negative: "but you're often blocked by your own inner darkness"
@@ -428,7 +567,6 @@
                         positive: "You're deep and thoughtful",
                         negative: "but you tend to bring down the mood wherever you go"
                     },
-                    // Rainy conditions
                     51: {
                         positive: "You're sensitive to others' feelings",
                         negative: "but you cry way too easily over everything"
@@ -441,7 +579,6 @@
                         positive: "You feel everything deeply",
                         negative: "but you're a total drama queen"
                     },
-                    // Stormy conditions
                     95: {
                         positive: "You're passionate and intense",
                         negative: "but you create chaos wherever you go"
@@ -452,7 +589,6 @@
                     }
                 };
 
-                // Temperature-based traits
                 let tempTrait = "";
                 if (maxTemp >= 35) {
                     tempTrait = "You're quick to anger and unbearable when mad";
@@ -460,7 +596,6 @@
                     tempTrait = "You can be ice cold and push everyone away";
                 }
 
-                // Get base trait or default
                 const baseTrait = traits[weatherCode] || traits[0];
                 return {
                     traits: [
@@ -474,6 +609,20 @@
                 const toast = $('#toast');
                 toast.text(message).fadeIn();
                 setTimeout(() => toast.fadeOut(), duration);
+            }
+
+            function getWeatherIcon(weatherCode) {
+                const weatherIcons = {
+                    0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 
+                    45: '🌫️', 48: '🌫️', 
+                    51: '🌧️', 53: '🌧️', 55: '🌧️', 
+                    61: '🌧️', 63: '🌧️', 65: '🌧️',
+                    71: '🌨️', 73: '🌨️', 75: '🌨️', 
+                    77: '🌨️', 80: '🌧️', 81: '🌧️',
+                    82: '🌧️', 85: '🌨️', 86: '🌨️', 
+                    95: '⛈️', 96: '⛈️', 99: '⛈️'
+                };
+                return weatherIcons[weatherCode] || '❓';
             }
 
             function renderHistoryTiles(data) {
@@ -510,19 +659,17 @@
 
                 $('.weather-stats').html(statsHtml);
 
-                // Next birthday's forecast
+                // Calculate next birthday forecast
                 const today = new Date();
-                const nextBirthdayYear = new Date(
-                    today.getFullYear(),
-                    parseInt($('#dobMonth').val()) - 1,
-                    parseInt($('#dobDay').val())
-                );
+                const birthdayMonth = parseInt($('#dobMonth').val()) - 1; // 0-based month
+                const birthdayDay = parseInt($('#dobDay').val());
                 
-                if (nextBirthdayYear < today) {
-                    nextBirthdayYear.setFullYear(today.getFullYear() + 1);
+                const nextBirthday = new Date(today.getFullYear(), birthdayMonth, birthdayDay);
+                if (nextBirthday < today) {
+                    nextBirthday.setFullYear(today.getFullYear() + 1);
                 }
 
-                const formattedNextBirthday = nextBirthdayYear.toLocaleDateString('en-US', {
+                const formattedNextBirthday = nextBirthday.toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric'
@@ -537,20 +684,6 @@
                     <div class="weather-icon">${getWeatherIcon(data.prediction.weatherCode)}</div>
                     <div style="font-size: 1.2em;">${predictionTemp}°${isFahrenheit ? 'F' : 'C'}</div>
                 `);
-            }
-
-            function getWeatherIcon(weatherCode) {
-                const weatherIcons = {
-                    0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 
-                    45: '🌫️', 48: '🌫️', 
-                    51: '🌧️', 53: '🌧️', 55: '🌧️', 
-                    61: '🌧️', 63: '🌧️', 65: '🌧️',
-                    71: '🌨️', 73: '🌨️', 75: '🌨️', 
-                    77: '🌨️', 80: '🌧️', 81: '🌧️',
-                    82: '🌧️', 85: '🌨️', 86: '🌨️', 
-                    95: '⛈️', 96: '⛈️', 99: '⛈️'
-                };
-                return weatherIcons[weatherCode] || '❓';
             }
 
             async function checkWeather() {
@@ -586,7 +719,7 @@
                                 longitude: selectedCity.longitude,
                                 month: month,
                                 day: day,
-                                startYear: Math.max(1940, year - 10),
+                                startYear: year,  // Changed to use birth year
                                 endYear: new Date().getFullYear()
                             }
                         })
@@ -620,7 +753,6 @@
                                 .map(trait => `<div class="personality-trait">${trait}</div>`)
                                 .join('')
                         );
-
                         // Weather Soulmate Section
                         const soulmate = findWeatherSoulmate(
                             weatherResponse.daily.temperature_2m_max[0],
@@ -632,10 +764,37 @@
                             soulmate.temperature.toFixed(1);
 
                         $('.soulmate-content').html(`
-                            <div class="soulmate-icon">❤️</div>
-                            <div class="soulmate-description">${soulmate.description}</div>
-                            <div>Perfect Match Temperature: ${soulmateTempDisplay}${unit}</div>
-                            <div>Season: ${soulmate.season}</div>
+                            <div class="soulmate-icon">✨</div>
+                            <div class="soulmate-description" style="margin-bottom: 20px;">
+                                ${soulmate.description}
+                            </div>
+                            <div style="margin: 15px 0;">
+                                <strong>Perfect Match Temperature:</strong><br>
+                                ${soulmateTempDisplay}${unit}
+                            </div>
+                            <div style="margin: 15px 0;">
+                                <strong>Most Compatible Zodiac Signs:</strong>
+                                <div class="zodiac-signs">
+                                    ${soulmate.zodiacMatch.signs.map(sign => 
+                                        `<span class="zodiac-sign">${sign}</span>`
+                                    ).join('')}
+                                </div>
+                                <div class="compatibility-reason">
+                                    ${soulmate.zodiacMatch.reason}
+                                </div>
+                            </div>
+                            <div style="margin: 15px 0;">
+                                <strong>Shared Interests:</strong>
+                                <div class="soulmate-traits">
+                                    ${soulmate.traits.map(trait => 
+                                        `<span class="soulmate-trait">${trait}</span>`
+                                    ).join('')}
+                                </div>
+                            </div>
+                            <div style="margin-top: 15px;">
+                                <strong>Perfect Date Idea:</strong><br>
+                                ${soulmate.activities}
+                            </div>
                         `);
 
                         // Historical Timeline
