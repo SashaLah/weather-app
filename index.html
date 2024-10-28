@@ -75,7 +75,7 @@
             font-size: 16px;
             transition: background-color 0.3s;
             display: none;
-            height: 45px;
+            white-space: nowrap;
         }
 
         .switch {
@@ -163,7 +163,7 @@
         .timeline-grid {
             display: grid;
             grid-template-columns: repeat(12, 1fr);
-            gap: 4px;
+            gap: 2px;
             position: relative;
             padding: 10px 0;
             margin-top: 25px;
@@ -195,11 +195,10 @@
             justify-content: center;
             position: relative;
             cursor: pointer;
-            min-height: 35px;
         }
 
         .weather-tile .icon {
-            font-size: 20px;
+            font-size: 16px;
             line-height: 1;
         }
 
@@ -268,6 +267,20 @@
             100% { transform: translateY(0px); }
         }
 
+        .weather-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .weather-info-item {
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
         .toast {
             position: fixed;
             bottom: 20px;
@@ -294,6 +307,34 @@
             cursor: pointer;
             min-width: 200px;
             transition: background-color 0.3s;
+        }
+
+        @media (max-width: 600px) {
+            .timeline-grid {
+                gap: 1px;
+            }
+            
+            .weather-tile .icon {
+                font-size: 14px;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .weather-info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .search-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            #searchInput {
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
         }
     </style>
 </head>
@@ -549,14 +590,34 @@
                         const maxTemp = isFahrenheit ? 
                             (weatherResponse.daily.temperature_2m_max[0] * 9/5 + 32).toFixed(1) : 
                             weatherResponse.daily.temperature_2m_max[0].toFixed(1);
+                        const minTemp = isFahrenheit ?
+                            (weatherResponse.daily.temperature_2m_min[0] * 9/5 + 32).toFixed(1) :
+                            weatherResponse.daily.temperature_2m_min[0].toFixed(1);
                         const unit = isFahrenheit ? '°F' : '°C';
                         const precipitation = weatherResponse.daily.precipitation_sum[0];
+                        const windSpeed = weatherResponse.daily.windspeed_10m_max[0];
 
                         $('.weather-content').html(`
                             <div style="text-align: center">
                                 <div class="weather-icon">${getWeatherIcon(weatherResponse.daily.weathercode[0])}</div>
-                                <div style="font-size: 1.2em; margin-bottom: 10px;">${maxTemp}${unit}</div>
-                                <div>Precipitation: ${precipitation}mm</div>
+                                <div class="weather-info-grid">
+                                    <div class="weather-info-item">
+                                        <div>High Temperature</div>
+                                        <div style="font-size: 1.2em">${maxTemp}${unit}</div>
+                                    </div>
+                                    <div class="weather-info-item">
+                                        <div>Low Temperature</div>
+                                        <div style="font-size: 1.2em">${minTemp}${unit}</div>
+                                    </div>
+                                    <div class="weather-info-item">
+                                        <div>Wind Speed</div>
+                                        <div style="font-size: 1.2em">${windSpeed} km/h</div>
+                                    </div>
+                                    <div class="weather-info-item">
+                                        <div>Precipitation</div>
+                                        <div style="font-size: 1.2em">${precipitation} mm</div>
+                                    </div>
+                                </div>
                             </div>
                         `);
 
